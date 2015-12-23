@@ -1,0 +1,112 @@
+The reason to store the namespace and its associated slice server is so that
+if the master server is down, and another instance is started up, the application
+would have knowledge of which slice server has been registered previously, and thus
+is able to resolve the server ID to the actual ip address when client request to get 
+file metadata.
+
+--------------------------------------------------------------------------------------------
+
+IMAGE FILE
+
+For each file entry, the format as follows (parameters on each line separated by tab):
+
+FILE	<namespace>	<full path> <version> <file size> <owner> <creation timestamp> <last modified timestamp> <last accessed timestamp> <slice blk size> <slice key hash>
+<slice seq> <slicename 1> <server ID 1> <slice length> <slice checksum 1> <seg count>
+<segment name>	<server ID>	<segment offset> <segment length>
+....
+<slice seq n> <slicename n>	<server ID n>	<slice checksum n>	<seg count n>
+END
+LOCK <user> (indicates that the file is being locked by the user)
+CHG_MODE <mode> (indicates the the file is requested for change mode
+
+For each directory entry, the format as follows (parameters on each line separated by tab):
+
+DIR	<namespace>	<full path>	<owner> <creation timestamp> <last upd timestamp>
+
+For each namespace entry, the format as follows (parameters on each line separated by tab):
+
+SLICE_SERVER <ID> <IP address> <type> <mode> <keyId> <key>
+<prop name 1>=<prop value 1>
+...
+<prop name n>=<prop value n> 
+END
+
+NAMESPACE <namespace> <memory available> <memory used>
+<server 1 ID>
+...
+<server n ID>
+END
+
+--------------------------------------------------------------------------------------------
+
+EDIT LOG
+
+Parameters on each line are separated by tab.
+
+FILE_ADD	<namespace>	<full path>	<version> <file size> <owner> <creation timestamp> <last modified timestamp> <slice blk size> <slice key hash>
+<slice seq> <slicename 1> <server ID 1> <slice length> <slice checksum 1> <seg count>
+<segment name>	<server ID>	<segment offset> <segment length>
+....
+<slice seq n> <slicename n>	<server ID n>	<slice checksum n>	<seg count n>
+END
+
+FILE_UPD	<namespace> <full path> <version> <file size> <owner> <creation timestamp> <last modified timestamp> <slice blk size> <slice key hash>
+<slice seq> <slicename 1> <server ID 1> <slice length> <slice checksum 1> <seg count>
+<segment name>	<server ID>	<segment offset> <segment length>
+....
+<slice seq n> <slicename n>	<server ID n>	<slice checksum n>	<seg count n>
+END
+
+FILE_MV	<original namespace> <original full path> <new namespace> <new full path> <timestamp>
+
+FILE_ACC <namespace> <full path> <timestamp>
+
+FILE_LOCK <namespace> <full path> <user>
+
+FILE_UNLOCK <namespace> <full path>
+
+FILE_SLICE_REV	<namespace> <full path> <slice seq> <slice name> <slice length> <slice checksum>
+
+FILE_SLICE_REM	<namespace>	<full path>	<slice seq> <slice name>
+
+FILE_SLICE_MV <namespace> <full path> <slice seq> <new server ID>
+
+FILE_SLICE_SEG_REM <namespace> <full path> <slice seq> <seg name> <slice length>
+
+FILE_DEL <namespace> <full path> <timestamp>
+
+DIR_ADD	<namespace>	<full path>	<owner> <creation timestamp>
+
+DIR_DEL	<namespace>	<full path> <timestamp>
+
+FILE_CHG_MODE <namespace> <full path> <mode>
+
+--------------------------------------------------------------------------------------------
+
+NAMESPACE LOG
+
+Parameters on each line are separated by tab.
+
+NAMESP_REG	<server ID>	<server IP address> <server type> <server mode> <keyId> <key>
+SLICE_SVR_PROP
+<prop name 1>=<prop value 1>
+....
+<prop name n>=<prop value n>
+END_SLICE_SVR_PROP
+<namespace 1> <memory available 1>
+....
+<namespace n> <memory available n>
+END
+
+NAMESP_REM	<server ID>
+<namespace 1>
+...
+<namespace n>
+END
+
+SLICE_SVR_UPD <server ID> <server IP address> <server type> <server mode> <keyId> <key>
+SLICE_SVR_PROP
+<prop name 1>=<prop value 1>
+....
+<prop name n>=<prop value n>
+END_SLICE_SVR_PROP

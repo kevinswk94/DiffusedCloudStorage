@@ -1,0 +1,47 @@
+14/10/2010
+
+segment id should be in the slice info.
+
+
+23/8/2010 
+
+Test out rational team concert 3
+
+11/8/2010
+Issues: 
+1. The storing of image should be implemented as serialize method
+
+
+-------
+
+meta-data that is missing: 
+1. number of shares and quorum?
+2. keys? 
+3. fix matrix? 
+
+
+IDA : 
+,
+1. make the n-shares and k configurable
+
+
+Streaming support
+
+matrix = n X k 
+input = k x L 
+out = n x L 
+
+we can do the dot product for col1 (first byte of output files) and 
+n rows (to get first byte of n files and then col2 and n rows to get 2nd byte of 
+n files, etc... in this case, we don't need to wait for all the data before writing
+out.. 
+So, the algo will be everytime we get k bytes of data, we write out to n files immediately. 
+
+
+
+--- extra meta info ---
+matrix={(1,2,3,4},{2,3,4,5),....}
+shares=4
+quorum=3
+
+
