@@ -42,7 +42,7 @@ import java.io.SequenceInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainWindow_Alt extends JFrame
+public class MainWindow extends JFrame
 {
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
@@ -60,7 +60,7 @@ public class MainWindow_Alt extends JFrame
 			{
 				try
 				{
-					MainWindow_Alt frame = new MainWindow_Alt();
+					MainWindow frame = new MainWindow();
 					frame.setVisible(true);
 				} catch (Exception e)
 				{
@@ -73,7 +73,7 @@ public class MainWindow_Alt extends JFrame
 	/**
 	 * Create the frame.
 	 */
-	public MainWindow_Alt()
+	public MainWindow()
 	{
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -85,8 +85,7 @@ public class MainWindow_Alt extends JFrame
 
 		JPanel panel_chooseFile = new JPanel();
 		panel_contentPane.add(panel_chooseFile, BorderLayout.NORTH);
-		panel_chooseFile.setLayout(new FormLayout(new ColumnSpec[] { ColumnSpec.decode("286px:grow"),
-				ColumnSpec.decode("40px"), ColumnSpec.decode("93px"), }, new RowSpec[] { RowSpec.decode("23px"), }));
+		panel_chooseFile.setLayout(new FormLayout(new ColumnSpec[] { ColumnSpec.decode("286px:grow"), ColumnSpec.decode("40px"), ColumnSpec.decode("93px"), }, new RowSpec[] { RowSpec.decode("23px"), }));
 
 		tb_filename = new JTextField();
 		tb_filename.setEditable(false);
@@ -100,8 +99,7 @@ public class MainWindow_Alt extends JFrame
 			{
 				JFileChooser fc = new JFileChooser("C:\\Sample Files");
 				fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-				//fc.setCurrentDirectory(new File(System.getProperty("user.home") + "\\Pictures"));
-				
+
 				int validFile = fc.showOpenDialog(panel_contentPane);
 				if (validFile == JFileChooser.APPROVE_OPTION)
 				{
@@ -112,11 +110,11 @@ public class MainWindow_Alt extends JFrame
 			}
 		});
 		panel_chooseFile.add(btn_chooseFile, "3, 1, fill, fill");
-		
+
 		JPanel panel_manipulationControls = new JPanel();
 		panel_contentPane.add(panel_manipulationControls, BorderLayout.CENTER);
 		panel_manipulationControls.setLayout(null);
-		
+
 		JButton btnSplit = new JButton("Split");
 		btnSplit.addActionListener(new ActionListener()
 		{
@@ -133,10 +131,10 @@ public class MainWindow_Alt extends JFrame
 	{
 		int rowSize = 15;
 		int colSize = 12;
-		
+
 		int[][] mat = Util.generateIndependenceMatrix(rowSize, colSize);
 		StringBuffer sb = new StringBuffer();
-		
+
 		// convert the matrix into a string
 		for (int row = 0; row < rowSize; row++)
 		{
@@ -149,16 +147,13 @@ public class MainWindow_Alt extends JFrame
 			if (row < rowSize - 1)
 				sb.append("|");
 		}
-		
+
 		String matrix = sb.toString();
 		System.out.println("Matrix: " + matrix);
 
 		IInfoDispersal iid = new RabinImpl2();
-		
 		IdaInfo info = new IdaInfo(rowSize, colSize, matrix);
-		
 		info.setDataSize(inputFile.length());
-
 		FileInputStream fileInputStream;
 
 		try
@@ -169,13 +164,13 @@ public class MainWindow_Alt extends JFrame
 			long startTime = System.currentTimeMillis();
 			List<InputStream> lsSegmented = iid.split(fileInputStream, info);
 			long endTime = System.currentTimeMillis();
-			
+
 			System.out.println("Total time taken = " + (endTime - startTime));
 			System.out.println("Output Segments (" + lsSegmented.size() + "):");
 
 			List<InputStream> lsSegmentedWithId = new ArrayList<InputStream>();
 			byte index = 0;
-			
+
 			// Needs to add sequence number to each sequence
 			for (InputStream inputStream : lsSegmented)
 			{
@@ -196,47 +191,26 @@ public class MainWindow_Alt extends JFrame
 			lsShuffle.add(lsSegmentedWithId.get(9));
 			lsShuffle.add(lsSegmentedWithId.get(10));
 			lsShuffle.add(lsSegmentedWithId.get(11));
-			
-			/*
-			 * lsShuffle.add(lsSegmentedWithId.get(12));
-			 * lsShuffle.add(lsSegmentedWithId.get(13));
-			 * lsShuffle.add(lsSegmentedWithId.get(14));
-			 * lsShuffle.add(lsSegmentedWithId.get(15));
-			 * lsShuffle.add(lsSegmentedWithId.get(16));
-			 * lsShuffle.add(lsSegmentedWithId.get(17));
-			 * lsShuffle.add(lsSegmentedWithId.get(18));
-			 * lsShuffle.add(lsSegmentedWithId.get(19));
-			 */
-			
-			// fis.reset();
-			// InputStream isCombined = impl.combine(lsSegmented);
+
 			InputStream isCombined = iid.combine(lsShuffle, info);
-			// isCombined.mark(0);
-			
+
 			System.out.println("Current path: " + currentPath + tb_filename.getText());
-			FileOutputStream outputFile = new FileOutputStream(currentPath  + "combined_" + tb_filename.getText());
-			// FileOutputStream fout = new
-			// FileOutputStream("/Users/markk/Documents/out.txt");
-			// ByteArrayOutputStream out=new ByteArrayOutputStream();
-			
+			FileOutputStream outputFile = new FileOutputStream(currentPath + "combined_" + tb_filename.getText());
+
 			int d;
 			while ((d = isCombined.read()) != -1)
 			{
-				//System.out.println(d);
+				// System.out.println(d);
 				outputFile.write(d);
 			}
-			// System.out.println("Read col combined data len: " + out.size());
 			outputFile.close();
-		}
-		catch (FileNotFoundException e)
+		} catch (FileNotFoundException e)
 		{
 			e.printStackTrace();
-		}
-		catch (IDAException e)
+		} catch (IDAException e)
 		{
 			e.printStackTrace();
-		}
-		catch (IOException e)
+		} catch (IOException e)
 		{
 			e.printStackTrace();
 		}
