@@ -1,0 +1,7 @@
+s3.cnt=1
+s3.id0=s3fs1
+s3.bucket0=nypmoeif-ts3f
+s3.region0=US_Standard
+s3.namespace0=urn\:sit.nyp.edu.sg
+s3.accesskey0=AKIAI6BIYGGY3LPKLEBA
+s3.secretaccesskey0=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

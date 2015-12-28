@@ -1,0 +1,13 @@
+s3.cnt=2
+s3.id0=s3fs1
+s3.bucket0=nypbucket1
+s3.region0=AP_Singapore
+s3.namespace0=urn\:sit.nyp.edu.sg
+s3.accesskey0=AKIAICAHZ7HQWLNGO2MA
+s3.secretaccesskey0=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
+s3.id0=s3fs2
+s3.bucket0=nypbucket2
+s3.region0=AP_Singapore
+s3.namespace0=urn\:sit.nyp.edu.sg
+s3.accesskey0=AKIAICAHZ7HQWLNGO2MA
+s3.secretaccesskey0=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

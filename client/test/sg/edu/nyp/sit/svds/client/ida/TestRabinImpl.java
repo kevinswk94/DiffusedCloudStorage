@@ -58,7 +58,7 @@ public class TestRabinImpl
 		IdaInfo info = new IdaInfo(rowSize, colSize, matrix);
 
 		// open a file, can be any format
-		File inputFile = new File("C:\\Users\\L31209\\Pictures\\Sample Pictures\\Bird.jpg");
+		File inputFile = new File("C:\\Sample Files\\Test Document.txt");
 
 		info.setDataSize(inputFile.length());
 
@@ -116,7 +116,7 @@ public class TestRabinImpl
 			InputStream isCombined = iid.combine(lsShuffle, info);
 			// isCombined.mark(0);
 			
-			FileOutputStream outputFile = new FileOutputStream("C:\\Users\\L31209\\Pictures\\Sample Pictures\\Bird2.jpg");
+			FileOutputStream outputFile = new FileOutputStream("C:\\Sample Files\\Test Document2.txt");
 			// FileOutputStream fout = new
 			// FileOutputStream("/Users/markk/Documents/out.txt");
 			// ByteArrayOutputStream out=new ByteArrayOutputStream();
