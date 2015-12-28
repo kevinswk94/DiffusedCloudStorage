@@ -40,6 +40,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 public class MainWindow extends JFrame
@@ -127,7 +130,7 @@ public class MainWindow extends JFrame
 		panel_manipulationControls.add(btnSplit);
 	}
 
-	public void splitFile()
+	private void splitFile()
 	{
 		int rowSize = 15;
 		int colSize = 12;
@@ -166,20 +169,23 @@ public class MainWindow extends JFrame
 			long endTime = System.currentTimeMillis();
 
 			System.out.println("Total time taken = " + (endTime - startTime));
-			System.out.println("Output Segments (" + lsSegmented.size() + "):");
+			System.out.println("Output Segments :" + lsSegmented.size());
 
 			List<InputStream> lsSegmentedWithId = new ArrayList<InputStream>();
 			byte index = 0;
 
-			// Needs to add sequence number to each sequence
+			// Need to add sequence number to each sequence
 			for (InputStream inputStream : lsSegmented)
 			{
 				lsSegmentedWithId.add(new SequenceInputStream(new ByteArrayInputStream(new byte[] { index++ }), inputStream));
 			}
+			
+			System.out.println("lsSegmentedWithId count: " + lsSegmentedWithId.size());
 
 			// Rearrange InputStreams
 			List<InputStream> lsShuffle = new ArrayList<InputStream>();
-			lsShuffle.add(lsSegmentedWithId.get(0)); // random
+			
+			/*lsShuffle.add(lsSegmentedWithId.get(0)); // random
 			lsShuffle.add(lsSegmentedWithId.get(1));
 			lsShuffle.add(lsSegmentedWithId.get(2));
 			lsShuffle.add(lsSegmentedWithId.get(3)); // random
@@ -190,7 +196,9 @@ public class MainWindow extends JFrame
 			lsShuffle.add(lsSegmentedWithId.get(8));
 			lsShuffle.add(lsSegmentedWithId.get(9));
 			lsShuffle.add(lsSegmentedWithId.get(10));
-			lsShuffle.add(lsSegmentedWithId.get(11));
+			lsShuffle.add(lsSegmentedWithId.get(11));*/
+			
+			lsShuffle = PickRandomItems(lsSegmentedWithId, colSize);
 
 			InputStream isCombined = iid.combine(lsShuffle, info);
 
@@ -214,5 +222,15 @@ public class MainWindow extends JFrame
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * Gets randomly chosen n number of items from a provided list
+	 * */
+	private List<InputStream> PickRandomItems(List<InputStream> lst, int n)
+	{
+		List<InputStream> copy = new LinkedList<InputStream>(lst);
+	    Collections.shuffle(copy);
+	    return copy.subList(0, n);
 	}
 }

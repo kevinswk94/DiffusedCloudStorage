@@ -35,92 +35,27 @@ public class RabinImpl2 implements IInfoDispersal
 		}
 	}
 
-	// private int[][] m_nKeyMatrix = {
-	// {1, 1, 1},
-	// {1, 2, 4},
-	// {1, 3, 9},
-	// {1, 4, 16},
-	// {1, 5, 25}
-	// };
+	/**
+	 * The "in" parameter may be a fixed size array that is reused in
+	 * SVDSOutputStream so the actual data length may not be the array length,
+	 * therefore it may be needed to pass in the length of the data to be split.
+	 * 
+	 * Because padding is set based on the length of the data to be split, the
+	 * data length passed in should be a multiple of the quorum in the event
+	 * that the split is called multiple times (e.g streaming mode). The return
+	 * value is the number of padded bytes.
+	 * 
+	 * The actual length of the split data for each slice can get retrieved
+	 * through the IdaInfo class "getSliceLength(int)"
+	 * 
+	 * If digest is needed, pass in the class so the digest can be called while
+	 * splitting instead of running through the array to call again outside the
+	 * method
+	 **/
 
-	// private int[] getRow(int row, int[][] matrix)
-	// {
-	// return matrix[row];
-	// }
-
-	// public int[][] generateMatrix(int row, int col)
-	// {
-	// int[] x = new int[row];
-	// int[] y = new int[col];
-	//
-	// for (int i = 0; i < x.length; i++) {
-	// x[i] = i*2 + 1;
-	// }
-	// for (int i = 0; i < y.length; i++) {
-	// y[i] = i*2;
-	// }
-	//
-	// int[][] mat = new int[row][col];
-	// GaloisField gf = GaloisField.getInstance();
-	// int n;
-	// for (int r = 0; r < row; r++) {
-	// mat[r] = new int[col];
-	// for (int c = 0; c < col; c++) {
-	// mat[r][c] = (int)(gf.gf2_inv(8, x[r] ^ y[c]));
-	// }
-	// }
-	//
-	// return mat;
-	//
-	// }
-
-	// Alternative method 1, j, j^2
-	// public int[][] generateMatrix(int row, int col)
-	// {
-	// int[][] mat = new int[row][col];
-	// for (int i = 0; i < row; i++) {
-	// mat[i] = new int[col];
-	// for (int j = 0; j < col; j++) {
-	// if(i == 0)
-	// mat[i][j] = 1;
-	// else if(j == 0)
-	// mat[i][j] = 1;
-	// else if(j == 1) {
-	// mat[i][j] = i+1;
-	// }
-	// else {
-	// //i = 2, j = 2
-	// mat[i][j] = (int)GaloisField.getInstance().gf2_pow(8, i+1, j);
-	// //mat[i][j] = (int)Math.pow(i+1, j);
-	// System.out.println("i+1:" + (i+1));
-	// System.out.println("j:" + j);
-	// System.out.println("mat:" + mat[i][j]);
-	// }
-	// }
-	// }
-	//
-	// return mat;
-	// }
-
-	// parameter "in" may be a fix size array that is reused in
-	// SVDSOutputStream so the actual data length may not be the array length
-	// therefore
-	// need to pass in the length of the data to be splitted. Because padding is
-	// set
-	// based on the length of the data to be splitted, the data length pass in
-	// should
-	// be mutliples of the quorum in the event that the split is called multiple
-	// times
-	// (e.g streaming mode)
-	// return value is the no of padded bytes. The actual length of the splitted
-	// data
-	// for each slice can get retrieved through the idainfo class
-	// getSliceLength(int)
-	// if digest is needed, pass in the class so the digest can be cal while
-	// splitting
-	// instead of running thru the array to cal again outside the method
 	@Override
-	public int split(byte[] in, int inOffset, int inLen, IdaInfo info, byte[][] out, int outOffset, SliceDigest[] mds) throws IDAException
+	public int split(byte[] in, int inOffset, int inLen, IdaInfo info, byte[][] out, int outOffset, SliceDigest[] mds)
+			throws IDAException
 	{
 		if (inLen <= 0)
 			return 0;
@@ -163,7 +98,8 @@ public class RabinImpl2 implements IInfoDispersal
 												// key matrix
 				if (keyrow.length != segment.length)
 				{
-					throw new IDAException("Error:split(InputStream, int):  Segment length and key length does not match");
+					throw new IDAException(
+							"Error:split(InputStream, int):  Segment length and key length does not match");
 				}
 
 				b = mac(segment, keyrow);
@@ -225,9 +161,11 @@ public class RabinImpl2 implements IInfoDispersal
 					// System.out.print(keyrow[i] + " ");
 					// }
 					// System.out.println("");
+
 					if (keyrow.length != segment.length)
 					{
-						throw new IDAException("Error:split(InputStream, int):  Segment length and key length does not match");
+						throw new IDAException(
+								"Error:split(InputStream, int):  Segment length and key length does not match");
 					}
 					lstOut.get(row).write(mac(segment, keyrow));
 				}
@@ -242,20 +180,22 @@ public class RabinImpl2 implements IInfoDispersal
 		return toListOfInputStream(lstOut);
 	}
 
-	// parameter "slices" may be a fix size array that is reused in
-	// SVDSInputStream so the individual actual data length may not be the array
-	// length
-	// therefore need to pass in the length of data to combine. Also the padding
-	// count
-	// is passed in if the slices are the tail of the file and need to remove
-	// the padded bytes
-	// when split if performed earlier.
-	// to get the length of the data combined (does not always equal to the
-	// length of the array
-	// because it is fixed and reused in SVDSInputStream), call idainfo class
-	// getDataSize(int, int)
+	/**
+	 * The parameter "slices" may be a fixed sized array that is reused in
+	 * SVDSInputStream so the individual actual data length may not be the array
+	 * length, therefore it is needed to pass in the length of data to combine.
+	 * 
+	 * Also the padding count is passed in if the slices are the tail of the
+	 * file and need to remove the padded bytes when split if performed earlier.
+	 * 
+	 * To get the length of the data combined (does not always equal to the
+	 * length of the array because it is fixed and reused in SVDSInputStream),
+	 * call idainfo class "getDataSize(int, int)"
+	 **/
+
 	@Override
-	public int combine(byte[][] slices, int sliceOffset, int sliceLen, IdaInfo info, byte[] out, int outOffset) throws IDAException
+	public int combine(byte[][] slices, int sliceOffset, int sliceLen, IdaInfo info, byte[] out, int outOffset)
+			throws IDAException
 	{
 		if (sliceLen <= 0)
 			return 0;
@@ -334,7 +274,8 @@ public class RabinImpl2 implements IInfoDispersal
 		// Check if the List contains enough InputStream to perform the
 		// combine() operation.
 		if (slices.size() < m)
-			throw new IDAException("Error:combine(List<InputStream>):Insufficient slice available for combine operations");
+			throw new IDAException(
+					"Error:combine(List<InputStream>):Insufficient slice available for combine operations");
 
 		// If the input list > m slices, we remove some, we only need m slices
 		List<InputStream> lstSlices = new ArrayList<InputStream>();
@@ -388,7 +329,7 @@ public class RabinImpl2 implements IInfoDispersal
 
 	}
 
-	/***
+	/**
 	 * Converts from a list of output stream to a list of input streams (for
 	 * easy reading by calling function)
 	 * 
@@ -456,19 +397,19 @@ public class RabinImpl2 implements IInfoDispersal
 	 * Adds segment id and full stream size to each of the streams. Data are
 	 * needed during recombination. Stream size is needed to support padding
 	 * 
-	 * @param lst
-	 * @count The Size of the stream
+	 * @param lst The output stream
+	 * @param count The size of the stream
 	 */
-	// private void tagSegmentExtraData(List<ByteArrayOutputStream> lst, int
-	// count)
-	// {
-	// ByteArrayOutputStream baos;
-	// for (int i = 0; i < lst.size(); i++) {
-	// baos = lst.get(i);
-	// baos.write(i);
-	// baos.write(count);
-	// }
-	// }
+//	private void tagSegmentExtraData(List<ByteArrayOutputStream> lst, int count)
+//	{
+//		ByteArrayOutputStream baos;
+//		for (int i = 0; i < lst.size(); i++)
+//		{
+//			baos = lst.get(i);
+//			baos.write(i);
+//			baos.write(count);
+//		}
+//	}
 
 	/***
 	 * Currently parses only the segment id that was tagged using the
@@ -724,7 +665,8 @@ public class RabinImpl2 implements IInfoDispersal
 					{
 						// throw new
 						// IDAException("Error:split(InputStream, int):  Segment length and key length does not match");
-						System.out.println("Error:split(InputStream, int):  Segment length and key length does not match");
+						System.out
+								.println("Error:split(InputStream, int):  Segment length and key length does not match");
 						break;
 					}
 
@@ -916,5 +858,4 @@ public class RabinImpl2 implements IInfoDispersal
 			}
 		}
 	}
-
 }
