@@ -90,13 +90,16 @@ public class Util {
 	 * Generates an independence matrix.
 	 * @param row No of rows of the generated matrix
 	 * @param col No of columns of the generated matrix
-	 * @return A matrix that has rows that are independences of each other
+	 * @return A matrix that has rows that are independent of each other
 	 */
 	public static int[][] generateIndependenceMatrix(int row, int col)
 	{
-		//Conditions for independence
-		//xi + yi <> 0 (we can satisfy this if x and y are positive and non-zero
-		//for i <> j, xi <> xj and yi <> yj (ie, unique) 
+		
+		/*
+		Conditions for independence
+		xi + yi <> 0 (we can satisfy this if x and y are positive and non-zero
+		for i <> j, xi <> xj and yi <> yj (ie, unique)
+		*/
 		
 		int[] x = new int[row];
 		int[] y = new int[col];
@@ -108,23 +111,15 @@ public class Util {
 			y[i] = Util.getNextUnique(y);
 		}
 		
-//			for (int i = 0; i < x.length; i++) {
-//				x[i] = i*2 + 1;
-//			}
-//			for (int i = 0; i < y.length; i++) {
-//				y[i] = i*2;
-//			}
-		
 		int[][] mat = new int[row][col];
 		GaloisField gf = GaloisField.getInstance();
-		//int n;
+
 		for (int r = 0; r < row; r++) {
 			mat[r] = new int[col];
 			for (int c = 0; c < col; c++) {
 				mat[r][c] = (int)(gf.gf2_inv(8, x[r] ^ y[c]));
 			}
 		}
-		
 		return mat;
 	}
 	

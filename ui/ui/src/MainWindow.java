@@ -2,35 +2,8 @@ package ui.src;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
-
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-
-import java.awt.GridLayout;
-import java.awt.GridBagLayout;
-
-import javax.swing.JTextField;
-
-import java.awt.GridBagConstraints;
-
-import javax.swing.JButton;
-
-import sg.edu.nyp.sit.svds.client.ida.IInfoDispersal;
-import sg.edu.nyp.sit.svds.client.ida.RabinImpl2;
-import sg.edu.nyp.sit.svds.client.ida.Util;
-import sg.edu.nyp.sit.svds.exception.IDAException;
-import sg.edu.nyp.sit.svds.metadata.IdaInfo;
-
-import java.awt.Insets;
-
-import com.jgoodies.forms.layout.FormLayout;
-import com.jgoodies.forms.layout.ColumnSpec;
-import com.jgoodies.forms.layout.RowSpec;
-
-import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,10 +13,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.border.EmptyBorder;
+
+import sg.edu.nyp.sit.svds.client.ida.IInfoDispersal;
+import sg.edu.nyp.sit.svds.client.ida.RabinImpl2;
+import sg.edu.nyp.sit.svds.client.ida.Util;
+import sg.edu.nyp.sit.svds.exception.IDAException;
+import sg.edu.nyp.sit.svds.metadata.IdaInfo;
+
+import com.jgoodies.forms.layout.ColumnSpec;
+import com.jgoodies.forms.layout.FormLayout;
+import com.jgoodies.forms.layout.RowSpec;
 
 public class MainWindow extends JFrame
 {
@@ -123,22 +112,24 @@ public class MainWindow extends JFrame
 		{
 			public void actionPerformed(ActionEvent arg0)
 			{
-				splitFile();
+				splitAndCombineFile();
 			}
 		});
 		btnSplit.setBounds(175, 89, 84, 33);
 		panel_manipulationControls.add(btnSplit);
 	}
 
-	private void splitFile()
+	private void splitAndCombineFile()
 	{
 		int rowSize = 15;
 		int colSize = 12;
 
+		// Generate a two-dimensional array to store the Cauchy mattix
 		int[][] mat = Util.generateIndependenceMatrix(rowSize, colSize);
+		
+		
+		// Print the matrix as a string for visualization
 		StringBuffer sb = new StringBuffer();
-
-		// convert the matrix into a string
 		for (int row = 0; row < rowSize; row++)
 		{
 			for (int col = 0; col < colSize; col++)
@@ -150,13 +141,17 @@ public class MainWindow extends JFrame
 			if (row < rowSize - 1)
 				sb.append("|");
 		}
-
+		
 		String matrix = sb.toString();
 		System.out.println("Matrix: " + matrix);
 
+		// Declare an instance of the IDA algorithm
 		IInfoDispersal iid = new RabinImpl2();
+		
+		// Declare an instance of the IdaInfo class
 		IdaInfo info = new IdaInfo(rowSize, colSize, matrix);
 		info.setDataSize(inputFile.length());
+		
 		FileInputStream fileInputStream;
 
 		try
@@ -167,39 +162,49 @@ public class MainWindow extends JFrame
 			long startTime = System.currentTimeMillis();
 			List<InputStream> lsSegmented = iid.split(fileInputStream, info);
 			long endTime = System.currentTimeMillis();
-
 			System.out.println("Total time taken = " + (endTime - startTime));
+			
 			System.out.println("Output Segments :" + lsSegmented.size());
 
 			List<InputStream> lsSegmentedWithId = new ArrayList<InputStream>();
 			byte index = 0;
 
-			// Need to add sequence number to each sequence
+			// Loop through List of InputStreams and add sequence number to each element, starting from 0
 			for (InputStream inputStream : lsSegmented)
 			{
 				lsSegmentedWithId.add(new SequenceInputStream(new ByteArrayInputStream(new byte[] { index++ }), inputStream));
 			}
-			
-			System.out.println("lsSegmentedWithId count: " + lsSegmentedWithId.size());
 
 			// Rearrange InputStreams
 			List<InputStream> lsShuffle = new ArrayList<InputStream>();
 			
-			/*lsShuffle.add(lsSegmentedWithId.get(0)); // random
-			lsShuffle.add(lsSegmentedWithId.get(1));
-			lsShuffle.add(lsSegmentedWithId.get(2));
-			lsShuffle.add(lsSegmentedWithId.get(3)); // random
-			lsShuffle.add(lsSegmentedWithId.get(4));
-			lsShuffle.add(lsSegmentedWithId.get(5));
-			lsShuffle.add(lsSegmentedWithId.get(6));
-			lsShuffle.add(lsSegmentedWithId.get(7));
-			lsShuffle.add(lsSegmentedWithId.get(8));
-			lsShuffle.add(lsSegmentedWithId.get(9));
-			lsShuffle.add(lsSegmentedWithId.get(10));
-			lsShuffle.add(lsSegmentedWithId.get(11));*/
+//			lsShuffle.add(lsSegmentedWithId.get(0)); // random
+//			lsShuffle.add(lsSegmentedWithId.get(1));
+//			lsShuffle.add(lsSegmentedWithId.get(2));
+//			lsShuffle.add(lsSegmentedWithId.get(13)); // random
+//			lsShuffle.add(lsSegmentedWithId.get(4));
+//			lsShuffle.add(lsSegmentedWithId.get(5));
+//			lsShuffle.add(lsSegmentedWithId.get(6));
+//			lsShuffle.add(lsSegmentedWithId.get(12));
+//			lsShuffle.add(lsSegmentedWithId.get(8));
+//			lsShuffle.add(lsSegmentedWithId.get(9));
+//			lsShuffle.add(lsSegmentedWithId.get(10));
+//			lsShuffle.add(lsSegmentedWithId.get(11));
 			
+			// Pick random elements of colSize (e.g. 12) from lsSegmentedWithId and add them to lsShuffle
 			lsShuffle = PickRandomItems(lsSegmentedWithId, colSize);
-
+			
+			//TODO Create a method to output all file slices to disk for visualization purposes
+			/*int e = 0, dd;
+			for (InputStream is : lsShuffle)
+			{
+				FileOutputStream os = new FileOutputStream(currentPath + "\\Slices\\slice" + e++ + "_" + tb_filename.getText());
+				while ((dd = is.read()) != -1)
+					os.write(dd);
+				os.close();
+			}*/
+			
+			// Combine elements of lsShuffle into a InputStream using the IdaInfo variable, info
 			InputStream isCombined = iid.combine(lsShuffle, info);
 
 			System.out.println("Current path: " + currentPath + tb_filename.getText());
@@ -207,10 +212,8 @@ public class MainWindow extends JFrame
 
 			int d;
 			while ((d = isCombined.read()) != -1)
-			{
-				// System.out.println(d);
 				outputFile.write(d);
-			}
+			
 			outputFile.close();
 		} catch (FileNotFoundException e)
 		{
@@ -225,8 +228,10 @@ public class MainWindow extends JFrame
 	}
 	
 	/**
-	 * Gets randomly chosen n number of items from a provided list
-	 * */
+	 * Gets randomly chosen n number of items from a list
+	 * @param lst List of InputStreams
+	 * @param n number of elements to be randomly chosen
+	 **/
 	private List<InputStream> PickRandomItems(List<InputStream> lst, int n)
 	{
 		List<InputStream> copy = new LinkedList<InputStream>(lst);

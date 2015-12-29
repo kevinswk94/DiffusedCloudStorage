@@ -90,6 +90,10 @@ public class VirtualFS extends IVirtualDisk implements ICbFsEnumerateEvents,
 		if (isDriveMounted)
 			return DRIVE_ALREADY_MOUNTED_UNMOUNTED;
 
+		System.out.println("");
+		System.out.println("Drive mounted!!");
+		System.out.println("");
+		
 		if (mt == null)
 			mt = MasterTableFactory.getNamespaceInstance();
 
@@ -124,8 +128,10 @@ public class VirtualFS extends IVirtualDisk implements ICbFsEnumerateEvents,
 		if (!isDriveMounted)
 			return DRIVE_ALREADY_MOUNTED_UNMOUNTED;
 
-		System.out.println("Unmount drive");
-
+		System.out.println("");
+		System.out.println("Drive unmounted!!");
+		System.out.println("");
+		
 		// have to run the unmount in a thread as the virtual drive may be
 		// unmounted
 		// in event of error within the callback methods, if run directly, the
