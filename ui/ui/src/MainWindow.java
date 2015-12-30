@@ -25,6 +25,8 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
+import org.apache.http.client.AuthCache;
+
 import sg.edu.nyp.sit.svds.client.ida.IInfoDispersal;
 import sg.edu.nyp.sit.svds.client.ida.RabinImpl2;
 import sg.edu.nyp.sit.svds.client.ida.Util;
@@ -39,9 +41,12 @@ public class MainWindow extends JFrame
 {
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
+	
 	private File inputFile; // The input file
 	private String currentPath; // The path of the directory the user is currently in
+	
 	private int p = generateLargePrime(); // large prime
+	private List<Double> listOfAuthenticators = new ArrayList<Double>();
 
 	/**
 	 * Launch the application.
@@ -140,8 +145,7 @@ public class MainWindow extends JFrame
 					// TODO: Generate a pseudo random function key, k
 					
 					
-					
-				} catch (IOException ex)
+				} catch (Exception ex)
 				{
 					ex.printStackTrace();
 				}	
