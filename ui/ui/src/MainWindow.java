@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -38,8 +39,9 @@ public class MainWindow extends JFrame
 {
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
-	private File inputFile;
-	private String currentPath;
+	private File inputFile; // The input file
+	private String currentPath; // The path of the directory the user is currently in
+	private int p = generateLargePrime(); // large prime
 
 	/**
 	 * Launch the application.
@@ -112,7 +114,37 @@ public class MainWindow extends JFrame
 		{
 			public void actionPerformed(ActionEvent arg0)
 			{
-				splitAndCombineFile();
+				try
+				{
+					//splitAndCombineFile();
+					
+					// Erasure encodes the input file and returns a list of the InputStreams generated
+					List<InputStream> encodedSlices = getErasureEncodedFileSlices(inputFile);
+					
+					// Prints the contents of each InputStream to console
+					int count = 1;
+					for (InputStream is : encodedSlices)
+					{
+						System.out.println("Stream " + count++ + ": ");
+						int oneByte;
+						while ((oneByte = is.read()) != -1) {
+							System.out.write(oneByte);
+						}
+						System.out.println();
+						System.out.flush();
+					}
+					
+					// TODO: Generate a random integer, alpha, for use during creation of authentication values
+					int alpha = generateAlpha(p);
+					
+					// TODO: Generate a pseudo random function key, k
+					
+					
+					
+				} catch (IOException ex)
+				{
+					ex.printStackTrace();
+				}	
 			}
 		});
 		btnSplit.setBounds(175, 89, 84, 33);
@@ -127,8 +159,7 @@ public class MainWindow extends JFrame
 		// Generate a two-dimensional array to store the Cauchy mattix
 		int[][] mat = Util.generateIndependenceMatrix(rowSize, colSize);
 		
-		
-		// Print the matrix as a string for visualization
+		// Generate the matrix as a string for use in IdaInfo
 		StringBuffer sb = new StringBuffer();
 		for (int row = 0; row < rowSize; row++)
 		{
@@ -205,6 +236,7 @@ public class MainWindow extends JFrame
 			}*/
 			
 			// Combine elements of lsShuffle into a InputStream using the IdaInfo variable, info
+			// Requires each segment in List to have id, otherwise a OutOfBounds exception will occur
 			InputStream isCombined = iid.combine(lsShuffle, info);
 
 			System.out.println("Current path: " + currentPath + tb_filename.getText());
@@ -227,15 +259,163 @@ public class MainWindow extends JFrame
 		}
 	}
 	
+	private List<InputStream> getErasureEncodedFileSlices(File inFile)
+	//private void erasureEncodeFile(File inFile)
+	{
+//		int rowSize = 15; // Total number of blocks
+//		int colSize = 12; // Number of blocks needed to reconstruct the data (Quorum)
+		
+		int rowSize = 5;
+		int colSize = 3;
+
+		// Generate a two-dimensional array to store the Cauchy matrix
+		int[][] mat = Util.generateIndependenceMatrix(rowSize, colSize);
+		
+		// Convert the matrix to a string for use in the IdaInfo class
+		StringBuffer sb = new StringBuffer();
+		for (int row = 0; row < rowSize; row++)
+		{
+			for (int col = 0; col < colSize; col++)
+			{
+				sb.append(mat[row][col]);
+				if (col < colSize - 1)
+					sb.append(",");
+			}
+			if (row < rowSize - 1)
+				sb.append("|");
+		}
+		
+		String matrix = sb.toString();
+		System.out.println("Matrix: " + matrix);
+		
+		// Declare an instance of the IDA algorithm
+		IInfoDispersal iid = new RabinImpl2();
+
+		// Declare an instance of the IdaInfo class and set its size
+		IdaInfo info = new IdaInfo(rowSize, colSize, matrix);
+		info.setDataSize(inFile.length()); // Size of the file, in bytes
+
+		FileInputStream fileInputStream;
+		List<InputStream> lsSegmented = null;
+		List<InputStream> lsSegmentedWithId = null;
+		
+		try
+		{
+			fileInputStream = new FileInputStream(inFile);
+
+			// Split the input file into slices
+			lsSegmented = iid.split(fileInputStream, info);
+			
+			// Display number of slices generated
+			System.out.println("Output Segments : " + lsSegmented.size());
+
+			lsSegmentedWithId = new ArrayList<InputStream>();
+			byte index = 0; // byte can contain value from -128 to 127
+
+			// Loop through List of InputStreams and add sequence number to each element, starting from 0
+			for (InputStream inputStream : lsSegmented)
+			{
+				lsSegmentedWithId.add(new SequenceInputStream(new ByteArrayInputStream(new byte[] { index++ }), inputStream));
+			}
+			
+		} catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		} catch (IDAException e)
+		{
+			e.printStackTrace();
+		}
+		
+		return lsSegmentedWithId;
+		//return lsSegmented;
+	}
+	
 	/**
 	 * Gets randomly chosen n number of items from a list
 	 * @param lst List of InputStreams
 	 * @param n number of elements to be randomly chosen
+	 * @return Returns a list of randomly picked InputStreams
 	 **/
 	private List<InputStream> PickRandomItems(List<InputStream> lst, int n)
 	{
 		List<InputStream> copy = new LinkedList<InputStream>(lst);
 	    Collections.shuffle(copy);
 	    return copy.subList(0, n);
+	}
+	
+	/**
+	 * Generates a large prime using a couple of SecureRandom instances
+	 * 
+	 * @return Returns a large prime p
+	 */
+	private int generateLargePrime()
+	{
+		boolean isPrime;
+		int max, largestPrime = 3;
+		
+		try
+		{	
+			SecureRandom randSeed = SecureRandom.getInstance("SHA1PRNG", "SUN");
+			randSeed.nextBytes(new byte[128]);
+			byte[] seed = randSeed.generateSeed(10);
+			
+			SecureRandom rand1 = SecureRandom.getInstance("SHA1PRNG", "SUN");
+			rand1.setSeed(seed);
+			
+			max = rand1.nextInt((999999-100000+1)+100000);
+			
+			for (int y = 3; y < max; y += 2)
+			{
+				isPrime = true;
+				
+				for (int z = 2; z <= Math.sqrt(y); z++)
+				{
+					if (y % z == 0)
+						isPrime = false;
+				}
+				if (isPrime)
+				{
+					if (y > largestPrime)
+						largestPrime = y;
+				}
+			}
+//			System.out.println("Max: " + max);
+//			System.out.println("Largest Prime: " + largestPrime);
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		
+		return largestPrime;
+	}
+	
+	/**
+	 * Generates a value between 0 and max
+	 * 
+	 * @param max The upper limit of the range of values to choose from
+	 * @return Returns a random value as alpha
+	 */
+	private int generateAlpha(int max)
+	{
+		int result = 0;
+		
+		try
+		{
+			SecureRandom randSeed = SecureRandom.getInstance("SHA1PRNG", "SUN");
+			randSeed.nextBytes(new byte[128]);
+			byte[] seed = randSeed.generateSeed(10);
+			
+			SecureRandom rand1 = SecureRandom.getInstance("SHA1PRNG", "SUN");
+			rand1.setSeed(seed);
+			
+			result = rand1.nextInt(max);
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		
+		return result;
 	}
 }

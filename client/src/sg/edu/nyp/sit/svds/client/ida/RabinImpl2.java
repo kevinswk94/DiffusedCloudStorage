@@ -116,10 +116,12 @@ public class RabinImpl2 implements IInfoDispersal
 		return sliceLen;
 	}
 
+	/**
+	 * 
+	 */
 	@Override
 	public List<InputStream> split(InputStream is, IdaInfo info) throws IDAException
 	{
-
 		is = new BufferedInputStream(is);
 
 		List<ByteArrayOutputStream> lstOut = new ArrayList<ByteArrayOutputStream>();
@@ -127,7 +129,7 @@ public class RabinImpl2 implements IInfoDispersal
 
 		// Calculate parameters for split operation
 		int nSliceCount = info.getShares(); // n
-		int nSliceLength = info.getSliceLength(); // N/m
+		int nSliceLength = info.getSliceLength(); // N/m (Dynamically calculated)
 		int m = info.getQuorum(); // m
 
 		// Prepare streams for output
@@ -143,8 +145,7 @@ public class RabinImpl2 implements IInfoDispersal
 		int[] keyrow = null;
 		int[] segment = null;
 
-		// Performs the multiplexing of input stream and key matrix to generate
-		// slices
+		// Performs the multiplexing of input stream and key matrix to generate slices
 		try
 		{
 			for (int slice = 0; slice < nSliceLength; slice++)
@@ -152,10 +153,10 @@ public class RabinImpl2 implements IInfoDispersal
 				segment = getNextSegment(is, m);
 				for (int row = 0; row < nSliceCount; row++)
 				{
-					// keyrow = getRow(row, info.getMatrix()); //get the correct
-					// row in the key matrix
-					keyrow = info.getMatrix()[row]; // get the correct row in
-													// the key matrix
+					// keyrow = getRow(row, info.getMatrix()); //get the correct row in the key matrix
+					
+					keyrow = info.getMatrix()[row]; // get the correct row in the key matrix
+					
 					// System.out.println("Matrix:Row" + row);
 					// for (int i = 0; i < keyrow.length; i++) {
 					// System.out.print(keyrow[i] + " ");
@@ -170,7 +171,6 @@ public class RabinImpl2 implements IInfoDispersal
 					lstOut.get(row).write(mac(segment, keyrow));
 				}
 			}
-
 			is.close();
 		} catch (IOException ex)
 		{
@@ -334,7 +334,7 @@ public class RabinImpl2 implements IInfoDispersal
 	 * easy reading by calling function)
 	 * 
 	 * @param lstOut
-	 * @return
+	 * @return Returns a list of InputStreams
 	 */
 	private List<InputStream> toListOfInputStream(List<ByteArrayOutputStream> lstOut)
 	{
@@ -350,12 +350,9 @@ public class RabinImpl2 implements IInfoDispersal
 	 * This is a function to multiply and accumulate (+). The * and + operations
 	 * are performed using gf2 (gf2_mul and ^ respectively).
 	 * 
-	 * @param a1
-	 *            First array containing int values to be multiplied.
-	 * @param a2
-	 *            Second array containing int values to be multiplied.
-	 * @param mod
-	 *            The mod value to be performed
+	 * @param a1 First array containing int values to be multiplied.
+	 * @param a2 Second array containing int values to be multiplied.
+	 * @param mod The mod value to be performed
 	 * @return Return the final value of the mod operation.
 	 */
 	private int mac(int[] a1, int[] a2)
