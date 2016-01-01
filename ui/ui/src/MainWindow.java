@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -42,11 +43,11 @@ public class MainWindow extends JFrame
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
 	
-	private File inputFile; // The input file
-	private String currentPath; // The path of the directory the user is currently in
+	private File _inputFile; // The input file
+	private String _currentPath; // The path of the directory the user is currently in
 	
-	private int p = generateLargePrime(); // large prime
-	private List<Double> listOfAuthenticators = new ArrayList<Double>();
+	private int _p = generateLargePrime(); // large prime
+	private List<Double> _listOfAuthenticators = new ArrayList<Double>();
 
 	/**
 	 * Launch the application.
@@ -102,9 +103,9 @@ public class MainWindow extends JFrame
 				int validFile = fc.showOpenDialog(panel_contentPane);
 				if (validFile == JFileChooser.APPROVE_OPTION)
 				{
-					inputFile = fc.getSelectedFile();
-					tb_filename.setText(inputFile.getName());
-					currentPath = fc.getCurrentDirectory().toString() + "\\";
+					_inputFile = fc.getSelectedFile();
+					tb_filename.setText(_inputFile.getName());
+					_currentPath = fc.getCurrentDirectory().toString() + "\\";
 				}
 			}
 		});
@@ -124,23 +125,14 @@ public class MainWindow extends JFrame
 					//splitAndCombineFile();
 					
 					// Erasure encodes the input file and returns a list of the InputStreams generated
-					List<InputStream> encodedSlices = getErasureEncodedFileSlices(inputFile);
+					List<InputStream> encodedSlices = getErasureEncodedFileSlices(_inputFile);
 					
-					// Prints the contents of each InputStream to console
-					int count = 1;
-					for (InputStream is : encodedSlices)
-					{
-						System.out.println("Stream " + count++ + ": ");
-						int oneByte;
-						while ((oneByte = is.read()) != -1) {
-							System.out.write(oneByte);
-						}
-						System.out.println();
-						System.out.flush();
-					}
+					printInputStreamContents(encodedSlices);
+					
+					// TODO: Generate list of authenticators
 					
 					// TODO: Generate a random integer, alpha, for use during creation of authentication values
-					int alpha = generateAlpha(p);
+					int alpha = generateAlpha();
 					
 					// TODO: Generate a pseudo random function key, k
 					
@@ -185,13 +177,13 @@ public class MainWindow extends JFrame
 		
 		// Declare an instance of the IdaInfo class
 		IdaInfo info = new IdaInfo(rowSize, colSize, matrix);
-		info.setDataSize(inputFile.length());
+		info.setDataSize(_inputFile.length());
 		
 		FileInputStream fileInputStream;
 
 		try
 		{
-			fileInputStream = new FileInputStream(inputFile);
+			fileInputStream = new FileInputStream(_inputFile);
 
 			// Calculate time taken to split the file
 			long startTime = System.currentTimeMillis();
@@ -243,8 +235,8 @@ public class MainWindow extends JFrame
 			// Requires each segment in List to have id, otherwise a OutOfBounds exception will occur
 			InputStream isCombined = iid.combine(lsShuffle, info);
 
-			System.out.println("Current path: " + currentPath + tb_filename.getText());
-			FileOutputStream outputFile = new FileOutputStream(currentPath + "combined_" + tb_filename.getText());
+			System.out.println("Current path: " + _currentPath + tb_filename.getText());
+			FileOutputStream outputFile = new FileOutputStream(_currentPath + "combined_" + tb_filename.getText());
 
 			int d;
 			while ((d = isCombined.read()) != -1)
@@ -400,7 +392,7 @@ public class MainWindow extends JFrame
 	 * @param max The upper limit of the range of values to choose from
 	 * @return Returns a random value as alpha
 	 */
-	private int generateAlpha(int max)
+	private int generateAlpha()
 	{
 		int result = 0;
 		
@@ -413,7 +405,7 @@ public class MainWindow extends JFrame
 			SecureRandom rand1 = SecureRandom.getInstance("SHA1PRNG", "SUN");
 			rand1.setSeed(seed);
 			
-			result = rand1.nextInt(max);
+			result = rand1.nextInt(_p);
 		}
 		catch (Exception ex)
 		{
@@ -421,5 +413,34 @@ public class MainWindow extends JFrame
 		}
 		
 		return result;
+	}
+	
+	private int generatePRFKeyK()
+	{
+		Random rand = new Random();
+		return (int)(rand.nextDouble() * 1000000);
+	}
+
+	private void printInputStreamContents(List<InputStream> lis)
+	{
+		try
+		{
+			// Prints the contents of each InputStream to console
+			int count = 1;
+			for (InputStream is : lis)
+			{
+				System.out.println("Stream " + count++ + ": ");
+				int oneByte;
+				while ((oneByte = is.read()) != -1) {
+					System.out.write(oneByte);
+				}
+				System.out.println();
+				System.out.flush();
+			}
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
 	}
 }
