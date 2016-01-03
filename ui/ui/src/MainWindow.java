@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import sg.edu.nyp.sit.svds.client.ida.Util;
 import sg.edu.nyp.sit.svds.exception.IDAException;
 import sg.edu.nyp.sit.svds.metadata.IdaInfo;
 
+import com.amazonaws.services.identitymanagement.model.summaryKeyType;
 import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
@@ -47,6 +49,8 @@ public class MainWindow extends JFrame
 	private String _currentPath; // The path of the directory the user is currently in
 	
 	private int _p = generateLargePrime(); // large prime
+	private int _alpha = generateSecureRandomInteger(_p); // random integer within large prime p
+	private int _key = generatePRFKeyK();
 	private List<Double> _listOfAuthenticators = new ArrayList<Double>();
 
 	/**
@@ -127,14 +131,28 @@ public class MainWindow extends JFrame
 					// Erasure encodes the input file and returns a list of the InputStreams generated
 					List<InputStream> encodedSlices = getErasureEncodedFileSlices(_inputFile);
 					
-					printInputStreamContents(encodedSlices);
+					//printInputStreamContents(encodedSlices);
 					
-					// TODO: Generate list of authenticators
+					// Generate list of authenticators
+					for (InputStream inputStream : encodedSlices)
+						_listOfAuthenticators.add(calculateAuthenticationValue(inputStream));
 					
-					// TODO: Generate a random integer, alpha, for use during creation of authentication values
-					int alpha = generateAlpha();
+					// Displays the values of the authenticators to console
+					for (Double d : _listOfAuthenticators)
+						System.out.printf("%f\n", d);
 					
-					// TODO: Generate a pseudo random function key, k
+					// TODO: Create challenge set of L indices and L random coefficients
+					int qSize = 5;
+					List<Integer> Q = new ArrayList<Integer>();
+					
+					for (int i = 1; i <= qSize; i++)
+					{
+						Q.add(i);
+						Q.add(generateSecureRandomInteger(_p));
+					}
+					
+					// Sends Q to the prover
+					// pseudo code: prover(List<InputStream> Q, List<InputStream> encodedSlices)
 					
 					
 				} catch (Exception ex)
@@ -387,12 +405,11 @@ public class MainWindow extends JFrame
 	}
 	
 	/**
-	 * Generates a value between 0 and max
-	 * 
-	 * @param max The upper limit of the range of values to choose from
-	 * @return Returns a random value as alpha
+	 * Generates a random value between 0 and bound
+	 * @paramm bound The upper limit
+	 * @return Returns a securely generated random integer
 	 */
-	private int generateAlpha()
+	private int generateSecureRandomInteger(int bound)
 	{
 		int result = 0;
 		
@@ -405,7 +422,7 @@ public class MainWindow extends JFrame
 			SecureRandom rand1 = SecureRandom.getInstance("SHA1PRNG", "SUN");
 			rand1.setSeed(seed);
 			
-			result = rand1.nextInt(_p);
+			result = rand1.nextInt(bound);
 		}
 		catch (Exception ex)
 		{
@@ -420,7 +437,39 @@ public class MainWindow extends JFrame
 		Random rand = new Random();
 		return (int)(rand.nextDouble() * 1000000);
 	}
-
+	
+	/**
+	 * Calculates the authentication value for a given block of the input file
+	 * @param inputStream A block of the erasure encoded file
+	 * @return Returns the generated authentication value
+	 */
+	private double calculateAuthenticationValue(InputStream inputStream)
+	{
+		/* The issue is I do not know whether there are */
+		/* multiple keys and alphas, or just one of each. */
+		
+		//int key = generatePRFKeyK();
+		
+		double authenticator;
+		double blockXAlpha = 0.0;
+		
+		try
+		{
+			int oneByte;
+			while ((oneByte = inputStream.read()) != -1)
+			{
+				blockXAlpha += _alpha * oneByte;
+			}
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		
+		authenticator = _key + blockXAlpha;
+		return authenticator;
+	}
+	
 	private void printInputStreamContents(List<InputStream> lis)
 	{
 		try
@@ -442,5 +491,11 @@ public class MainWindow extends JFrame
 		{
 			ex.printStackTrace();
 		}
+	}
+	
+	private int[] prover(List<Integer> Q, List<Integer> encodedSlices)
+	{
+		// TODO: Calculate sigma and mu to be sent back to the verifier
+		
 	}
 }
