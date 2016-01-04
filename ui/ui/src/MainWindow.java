@@ -51,7 +51,7 @@ public class MainWindow extends JFrame
 	private int _p = generateLargePrime(); // large prime
 	private int _alpha = generateSecureRandomInteger(_p); // random integer within large prime p
 	private int _key = generatePRFKeyK();
-	private List<Double> _listOfAuthenticators = new ArrayList<Double>();
+	private List<Long> _listOfAuthenticators = new ArrayList<Long>();
 
 	/**
 	 * Launch the application.
@@ -138,22 +138,31 @@ public class MainWindow extends JFrame
 						_listOfAuthenticators.add(calculateAuthenticationValue(inputStream));
 					
 					// Displays the values of the authenticators to console
-					for (Double d : _listOfAuthenticators)
-						System.out.printf("%f\n", d);
+					System.out.print("Authenticators: ");
+					for (long i : _listOfAuthenticators)
+						System.out.print(i + ", ");
+					
+					System.out.println();
 					
 					// TODO: Create challenge set of L indices and L random coefficients
-					int qSize = 5;
+					// int qSize = 5;
 					List<Integer> Q = new ArrayList<Integer>();
 					
-					for (int i = 1; i <= qSize; i++)
+					for (int i = 1; i <= _listOfAuthenticators.size(); i++)
 					{
 						Q.add(i);
 						Q.add(generateSecureRandomInteger(_p));
 					}
 					
+					System.out.print("Q: ");
+					for (int i : Q)
+						System.out.print(i + ", ");
+					
+					System.out.println();
+					
 					// Sends Q to the prover
 					// pseudo code: prover(List<InputStream> Q, List<InputStream> encodedSlices)
-					
+					prover(Q, encodedSlices);
 					
 				} catch (Exception ex)
 				{
@@ -443,15 +452,15 @@ public class MainWindow extends JFrame
 	 * @param inputStream A block of the erasure encoded file
 	 * @return Returns the generated authentication value
 	 */
-	private double calculateAuthenticationValue(InputStream inputStream)
+	private long calculateAuthenticationValue(InputStream inputStream)
 	{
 		/* The issue is I do not know whether there are */
 		/* multiple keys and alphas, or just one of each. */
 		
 		//int key = generatePRFKeyK();
 		
-		double authenticator;
-		double blockXAlpha = 0.0;
+		long authenticator;
+		long blockXAlpha = 0;
 		
 		try
 		{
@@ -493,9 +502,59 @@ public class MainWindow extends JFrame
 		}
 	}
 	
-	private int[] prover(List<Integer> Q, List<Integer> encodedSlices)
+	/**
+	 * Calculates sigma and mu to be returned to the verifier
+	 * @param Q
+	 */
+	private void prover(List<Integer> Q, List<InputStream> encodedSlices)
+	//private int[] prover(List<Integer> Q, List<Integer> encodedSlices)
 	{
-		// TODO: Calculate sigma and mu to be sent back to the verifier
-		
+		try
+		{
+			// TODO: Calculate sigma as part of the response to be sent back to the verifier
+			long sigma = 0;
+			
+			List<Integer> coefficients = new ArrayList<Integer>();
+			for (int i = 1; i < Q.size() + 1; i += 2)
+			{
+				coefficients.add(Q.get(i));
+			}
+			
+			for (int i = 0; i < _listOfAuthenticators.size(); i++)
+			{
+				sigma += coefficients.get(i) * _listOfAuthenticators.get(i);
+			}
+			
+			// Print the coefficients to console
+			System.out.print("Coefficients: ");
+			for (int i : coefficients)
+				System.out.print(i + ", ");
+			
+			System.out.println();
+			
+			// Print the calculated sigma to console
+			System.out.println("Sigma: " + sigma);
+			
+			
+			// TODO: Calculate mu as part of the response to be sent back to the verifier
+			long mu = 0;
+			
+			for (int i = 0; i < coefficients.size(); i++)
+			{
+				InputStream inputStream = encodedSlices.get(i);
+				int oneByte;
+				while ((oneByte = inputStream.read()) != -1)
+				{
+					mu += coefficients.get(i) * oneByte;
+				}
+			}
+			
+			// Print the calculated mu to console
+			System.out.println("Mu: " + mu);
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
 	}
 }
