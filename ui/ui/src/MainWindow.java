@@ -502,13 +502,34 @@ public class MainWindow extends JFrame
 		}
 	}
 	
+	private void printInputStreamContents(InputStream is)
+	{
+		try
+		{
+			// Prints the contents of each InputStream to console
+			int oneByte;
+			while ((oneByte = is.read()) != -1) {
+				System.out.write(oneByte);
+			}
+			System.out.println();
+			System.out.flush();
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Calculates sigma and mu to be returned to the verifier
 	 * @param Q
 	 */
 	private void prover(List<Integer> Q, List<InputStream> encodedSlices)
-	//private int[] prover(List<Integer> Q, List<Integer> encodedSlices)
+	//private List<Integer> prover(List<Integer> Q, List<Integer> encodedSlices)
 	{
+		
+		System.out.println("EncodedSlices size: " + encodedSlices.size());
+		
 		try
 		{
 			// TODO: Calculate sigma as part of the response to be sent back to the verifier
