@@ -5,6 +5,7 @@ import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -44,10 +45,10 @@ public class MainWindow extends JFrame
 {
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
-	
+
 	private File _inputFile; // The input file
 	private String _currentPath; // The path of the directory the user is currently in
-	
+
 	private int _p = generateLargePrime(); // large prime
 	private int _alpha = generateSecureRandomInteger(_p); // random integer within large prime p
 	private int _key = generatePRFKeyK();
@@ -126,52 +127,56 @@ public class MainWindow extends JFrame
 			{
 				try
 				{
-					//splitAndCombineFile();
-					
+					// splitAndCombineFile();
+
 					// Erasure encodes the input file and returns a list of the InputStreams generated
 					List<InputStream> encodedSlices = getErasureEncodedFileSlices(_inputFile);
+					List<ByteArrayInput> encodedSlicesBytes = convertInputStreamToByteArrayInputStream(encodedSlices);
+					
+					printByteArrayInputStreamContents(encodedSlicesBytes);
 					
 					// Streams are not empty here
-					printInputStreamContents(encodedSlices);
-					
+					//printInputStreamContents(encodedSlices);
+
 					// Generate list of authenticators
 					for (InputStream inputStream : encodedSlices)
 						_listOfAuthenticators.add(calculateAuthenticationValue(inputStream));
-					
+
 					// Streams are blank here. They seem to close after being passed to another method
-					//printInputStreamContents(encodedSlices2);
-					
+					// printInputStreamContents(encodedSlices2);
+					printByteArrayInputStreamContents(encodedSlicesBytes);
+
 					// Displays the values of the authenticators to console
 					System.out.print("Authenticators: ");
 					for (long i : _listOfAuthenticators)
 						System.out.print(i + ", ");
-					
+
 					System.out.println();
-					
+
 					// TODO: Create challenge set of L indices and L random coefficients
 					// int qSize = 5;
 					List<Integer> Q = new ArrayList<Integer>();
-					
+
 					for (int i = 1; i <= _listOfAuthenticators.size(); i++)
 					{
 						Q.add(i);
 						Q.add(generateSecureRandomInteger(_p));
 					}
-					
+
 					System.out.print("Q: ");
 					for (int i : Q)
 						System.out.print(i + ", ");
-					
+
 					System.out.println();
-					
+
 					// Sends Q to the prover
 					// pseudo code: prover(List<InputStream> Q, List<InputStream> encodedSlices)
 					prover(Q, encodedSlices);
-					
+
 				} catch (Exception ex)
 				{
 					ex.printStackTrace();
-				}	
+				}
 			}
 		});
 		btnSplit.setBounds(175, 89, 84, 33);
@@ -185,7 +190,7 @@ public class MainWindow extends JFrame
 
 		// Generate a two-dimensional array to store the Cauchy mattix
 		int[][] mat = Util.generateIndependenceMatrix(rowSize, colSize);
-		
+
 		// Generate the matrix as a string for use in IdaInfo
 		StringBuffer sb = new StringBuffer();
 		for (int row = 0; row < rowSize; row++)
@@ -199,17 +204,17 @@ public class MainWindow extends JFrame
 			if (row < rowSize - 1)
 				sb.append("|");
 		}
-		
+
 		String matrix = sb.toString();
 		System.out.println("Matrix: " + matrix);
 
 		// Declare an instance of the IDA algorithm
 		IInfoDispersal iid = new RabinImpl2();
-		
+
 		// Declare an instance of the IdaInfo class
 		IdaInfo info = new IdaInfo(rowSize, colSize, matrix);
 		info.setDataSize(_inputFile.length());
-		
+
 		FileInputStream fileInputStream;
 
 		try
@@ -221,13 +226,14 @@ public class MainWindow extends JFrame
 			List<InputStream> lsSegmented = iid.split(fileInputStream, info);
 			long endTime = System.currentTimeMillis();
 			System.out.println("Total time taken = " + (endTime - startTime));
-			
+
 			System.out.println("Output Segments :" + lsSegmented.size());
 
 			List<InputStream> lsSegmentedWithId = new ArrayList<InputStream>();
 			byte index = 0;
 
-			// Loop through List of InputStreams and add sequence number to each element, starting from 0
+			// Loop through List of InputStreams and add sequence number to each
+			// element, starting from 0
 			for (InputStream inputStream : lsSegmented)
 			{
 				lsSegmentedWithId.add(new SequenceInputStream(new ByteArrayInputStream(new byte[] { index++ }), inputStream));
@@ -235,35 +241,37 @@ public class MainWindow extends JFrame
 
 			// Rearrange InputStreams
 			List<InputStream> lsShuffle = new ArrayList<InputStream>();
-			
-//			lsShuffle.add(lsSegmentedWithId.get(0)); // random
-//			lsShuffle.add(lsSegmentedWithId.get(1));
-//			lsShuffle.add(lsSegmentedWithId.get(2));
-//			lsShuffle.add(lsSegmentedWithId.get(13)); // random
-//			lsShuffle.add(lsSegmentedWithId.get(4));
-//			lsShuffle.add(lsSegmentedWithId.get(5));
-//			lsShuffle.add(lsSegmentedWithId.get(6));
-//			lsShuffle.add(lsSegmentedWithId.get(12));
-//			lsShuffle.add(lsSegmentedWithId.get(8));
-//			lsShuffle.add(lsSegmentedWithId.get(9));
-//			lsShuffle.add(lsSegmentedWithId.get(10));
-//			lsShuffle.add(lsSegmentedWithId.get(11));
-			
-			// Pick random elements of colSize (e.g. 12) from lsSegmentedWithId and add them to lsShuffle
+
+			// lsShuffle.add(lsSegmentedWithId.get(0)); // random
+			// lsShuffle.add(lsSegmentedWithId.get(1));
+			// lsShuffle.add(lsSegmentedWithId.get(2));
+			// lsShuffle.add(lsSegmentedWithId.get(13)); // random
+			// lsShuffle.add(lsSegmentedWithId.get(4));
+			// lsShuffle.add(lsSegmentedWithId.get(5));
+			// lsShuffle.add(lsSegmentedWithId.get(6));
+			// lsShuffle.add(lsSegmentedWithId.get(12));
+			// lsShuffle.add(lsSegmentedWithId.get(8));
+			// lsShuffle.add(lsSegmentedWithId.get(9));
+			// lsShuffle.add(lsSegmentedWithId.get(10));
+			// lsShuffle.add(lsSegmentedWithId.get(11));
+
+			// Pick random elements of colSize (e.g. 12) from lsSegmentedWithId
+			// and add them to lsShuffle
 			lsShuffle = PickRandomItems(lsSegmentedWithId, colSize);
-			
-			//TODO Create a method to output all file slices to disk for visualization purposes
-			/*int e = 0, dd;
-			for (InputStream is : lsShuffle)
-			{
-				FileOutputStream os = new FileOutputStream(currentPath + "\\Slices\\slice" + e++ + "_" + tb_filename.getText());
-				while ((dd = is.read()) != -1)
-					os.write(dd);
-				os.close();
-			}*/
-			
-			// Combine elements of lsShuffle into a InputStream using the IdaInfo variable, info
-			// Requires each segment in List to have id, otherwise a OutOfBounds exception will occur
+
+			// TODO Create a method to output all file slices to disk for
+			// visualization purposes
+			/*
+			 * int e = 0, dd; for (InputStream is : lsShuffle) {
+			 * FileOutputStream os = new FileOutputStream(currentPath +
+			 * "\\Slices\\slice" + e++ + "_" + tb_filename.getText()); while
+			 * ((dd = is.read()) != -1) os.write(dd); os.close(); }
+			 */
+
+			// Combine elements of lsShuffle into a InputStream using the
+			// IdaInfo variable, info
+			// Requires each segment in List to have id, otherwise a OutOfBounds
+			// exception will occur
 			InputStream isCombined = iid.combine(lsShuffle, info);
 
 			System.out.println("Current path: " + _currentPath + tb_filename.getText());
@@ -272,7 +280,7 @@ public class MainWindow extends JFrame
 			int d;
 			while ((d = isCombined.read()) != -1)
 				outputFile.write(d);
-			
+
 			outputFile.close();
 		} catch (FileNotFoundException e)
 		{
@@ -285,19 +293,20 @@ public class MainWindow extends JFrame
 			e.printStackTrace();
 		}
 	}
-	
+
 	private List<InputStream> getErasureEncodedFileSlices(File inFile)
-	//private void erasureEncodeFile(File inFile)
+	// private void erasureEncodeFile(File inFile)
 	{
-//		int rowSize = 15; // Total number of blocks
-//		int colSize = 12; // Number of blocks needed to reconstruct the data (Quorum)
-		
+		// int rowSize = 15; // Total number of blocks
+		// int colSize = 12; // Number of blocks needed to reconstruct the data
+		// (Quorum)
+
 		int rowSize = 5;
 		int colSize = 3;
 
 		// Generate a two-dimensional array to store the Cauchy matrix
 		int[][] mat = Util.generateIndependenceMatrix(rowSize, colSize);
-		
+
 		// Convert the matrix to a string for use in the IdaInfo class
 		StringBuffer sb = new StringBuffer();
 		for (int row = 0; row < rowSize; row++)
@@ -311,10 +320,10 @@ public class MainWindow extends JFrame
 			if (row < rowSize - 1)
 				sb.append("|");
 		}
-		
+
 		String matrix = sb.toString();
 		System.out.println("Matrix: " + matrix);
-		
+
 		// Declare an instance of the IDA algorithm
 		IInfoDispersal iid = new RabinImpl2();
 
@@ -325,26 +334,27 @@ public class MainWindow extends JFrame
 		FileInputStream fileInputStream;
 		List<InputStream> lsSegmented = null;
 		List<InputStream> lsSegmentedWithId = null;
-		
+
 		try
 		{
 			fileInputStream = new FileInputStream(inFile);
 
 			// Split the input file into slices
 			lsSegmented = iid.split(fileInputStream, info);
-			
+
 			// Display number of slices generated
 			System.out.println("Output Segments : " + lsSegmented.size());
 
 			lsSegmentedWithId = new ArrayList<InputStream>();
 			byte index = 0; // byte can contain value from -128 to 127
 
-			// Loop through List of InputStreams and add sequence number to each element, starting from 0
+			// Loop through List of InputStreams and add sequence number to each
+			// element, starting from 0
 			for (InputStream inputStream : lsSegmented)
 			{
 				lsSegmentedWithId.add(new SequenceInputStream(new ByteArrayInputStream(new byte[] { index++ }), inputStream));
 			}
-			
+
 		} catch (FileNotFoundException e)
 		{
 			e.printStackTrace();
@@ -352,13 +362,39 @@ public class MainWindow extends JFrame
 		{
 			e.printStackTrace();
 		}
-		
+
 		return lsSegmentedWithId;
-		//return lsSegmented;
+		// return lsSegmented;
 	}
 	
+	private List<ByteArrayInputStream> convertInputStreamToByteArrayInputStream(List<InputStream> listOfInputStreams)
+	{
+		List<ByteArrayInputStream> lsSegmentedBytes = new ArrayList<ByteArrayInputStream>();
+		
+		for (InputStream is : listOfInputStreams)
+		{
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+			
+			try
+			{
+				int oneByte;
+				while ((oneByte = is.read()) != -1)
+				{
+					buffer.write(oneByte);
+				}
+			} catch (Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			lsSegmentedBytes.add(new ByteArrayInputStream(buffer.toByteArray()));
+		}
+
+		return lsSegmentedBytes;
+	}
+
 	/**
 	 * Gets randomly chosen n number of items from a list
+	 * 
 	 * @param lst List of InputStreams
 	 * @param n number of elements to be randomly chosen
 	 * @return Returns a list of randomly picked InputStreams
@@ -366,10 +402,10 @@ public class MainWindow extends JFrame
 	private List<InputStream> PickRandomItems(List<InputStream> lst, int n)
 	{
 		List<InputStream> copy = new LinkedList<InputStream>(lst);
-	    Collections.shuffle(copy);
-	    return copy.subList(0, n);
+		Collections.shuffle(copy);
+		return copy.subList(0, n);
 	}
-	
+
 	/**
 	 * Generates a large prime using a couple of SecureRandom instances
 	 * 
@@ -379,22 +415,22 @@ public class MainWindow extends JFrame
 	{
 		boolean isPrime;
 		int max, largestPrime = 3;
-		
+
 		try
-		{	
+		{
 			SecureRandom randSeed = SecureRandom.getInstance("SHA1PRNG", "SUN");
 			randSeed.nextBytes(new byte[128]);
 			byte[] seed = randSeed.generateSeed(10);
-			
+
 			SecureRandom rand1 = SecureRandom.getInstance("SHA1PRNG", "SUN");
 			rand1.setSeed(seed);
-			
-			max = rand1.nextInt((999999-100000+1)+100000);
-			
+
+			max = rand1.nextInt((999999 - 100000 + 1) + 100000);
+
 			for (int y = 3; y < max; y += 2)
 			{
 				isPrime = true;
-				
+
 				for (int z = 2; z <= Math.sqrt(y); z++)
 				{
 					if (y % z == 0)
@@ -406,53 +442,53 @@ public class MainWindow extends JFrame
 						largestPrime = y;
 				}
 			}
-//			System.out.println("Max: " + max);
-//			System.out.println("Largest Prime: " + largestPrime);
-		}
-		catch (Exception ex)
+			// System.out.println("Max: " + max);
+			// System.out.println("Largest Prime: " + largestPrime);
+		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
-		
+
 		return largestPrime;
 	}
-	
+
 	/**
 	 * Generates a random value between 0 and bound
+	 * 
 	 * @paramm bound The upper limit
 	 * @return Returns a securely generated random integer
 	 */
 	private int generateSecureRandomInteger(int bound)
 	{
 		int result = 0;
-		
+
 		try
 		{
 			SecureRandom randSeed = SecureRandom.getInstance("SHA1PRNG", "SUN");
 			randSeed.nextBytes(new byte[128]);
 			byte[] seed = randSeed.generateSeed(10);
-			
+
 			SecureRandom rand1 = SecureRandom.getInstance("SHA1PRNG", "SUN");
 			rand1.setSeed(seed);
-			
+
 			result = rand1.nextInt(bound);
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
-		
+
 		return result;
 	}
-	
+
 	private int generatePRFKeyK()
 	{
 		Random rand = new Random();
-		return (int)(rand.nextDouble() * 1000000);
+		return (int) (rand.nextDouble() * 1000000);
 	}
-	
+
 	/**
 	 * Calculates the authentication value for a given block of the input file
+	 * 
 	 * @param inputStream A block of the erasure encoded file
 	 * @return Returns the generated authentication value
 	 */
@@ -460,12 +496,12 @@ public class MainWindow extends JFrame
 	{
 		/* The issue is I do not know whether there are */
 		/* multiple keys and alphas, or just one of each. */
-		
-		//int key = generatePRFKeyK();
-		
+
+		// int key = generatePRFKeyK();
+
 		long authenticator;
 		long blockXAlpha = 0;
-		
+
 		try
 		{
 			int oneByte;
@@ -473,16 +509,15 @@ public class MainWindow extends JFrame
 			{
 				blockXAlpha += _alpha * oneByte;
 			}
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
-		
+
 		authenticator = _key + blockXAlpha;
 		return authenticator;
 	}
-	
+
 	private void printInputStreamContents(List<InputStream> lis)
 	{
 		try
@@ -493,77 +528,120 @@ public class MainWindow extends JFrame
 			{
 				System.out.println("Stream " + count++ + ": ");
 				int oneByte;
-				while ((oneByte = is.read()) != -1) {
+				while ((oneByte = is.read()) != -1)
+				{
 					System.out.write(oneByte);
 				}
 				System.out.println();
 				System.out.flush();
 			}
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
 	}
-	
+
 	private void printInputStreamContents(InputStream is)
 	{
 		try
 		{
 			// Prints the contents of each InputStream to console
 			int oneByte;
-			while ((oneByte = is.read()) != -1) {
+			while ((oneByte = is.read()) != -1)
+			{
 				System.out.write(oneByte);
 			}
 			System.out.println();
 			System.out.flush();
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
 	}
 	
+	private void printByteArrayInputStreamContents(List<ByteArrayInputStream> lbais)
+	{
+		try
+		{
+			// Prints the contents of each InputStream to console
+			int count = 1;
+			for (ByteArrayInputStream bais : lbais)
+			{
+				System.out.println("Stream " + count++ + ": ");
+				int oneByte;
+				while ((oneByte = bais.read()) != -1)
+				{
+					System.out.write(oneByte);
+				}
+				System.out.println();
+				System.out.flush();
+			}
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
+	private void printByteArrayInputStreamContents(ByteArrayInputStream bais)
+	{
+		try
+		{
+			// Prints the contents of each InputStream to console
+			int oneByte;
+			while ((oneByte = bais.read()) != -1)
+			{
+				System.out.write(oneByte);
+			}
+			System.out.println();
+			System.out.flush();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+
 	/**
 	 * Calculates sigma and mu to be returned to the verifier
+	 * 
 	 * @param Q
 	 */
 	private void prover(List<Integer> Q, List<InputStream> encodedSlices)
-	//private List<Integer> prover(List<Integer> Q, List<Integer> encodedSlices)
+	// private List<Integer> prover(List<Integer> Q, List<Integer> encodedSlices)
 	{
-		
+
 		System.out.println("EncodedSlices size: " + encodedSlices.size());
-		
+
 		try
 		{
-			// TODO: Calculate sigma as part of the response to be sent back to the verifier
+			// TODO: Calculate sigma as part of the response to be sent back to
+			// the verifier
 			long sigma = 0;
-			
+
 			List<Integer> coefficients = new ArrayList<Integer>();
 			for (int i = 1; i < Q.size() + 1; i += 2)
 			{
 				coefficients.add(Q.get(i));
 			}
-			
+
 			for (int i = 0; i < _listOfAuthenticators.size(); i++)
 			{
 				sigma += coefficients.get(i) * _listOfAuthenticators.get(i);
 			}
-			
+
 			// Print the coefficients to console
 			System.out.print("Coefficients: ");
 			for (int i : coefficients)
 				System.out.print(i + ", ");
-			
+
 			System.out.println();
-			
+
 			// Print the calculated sigma to console
 			System.out.println("Sigma: " + sigma);
-			
-			
-			// TODO: Calculate mu as part of the response to be sent back to the verifier
+
+			// TODO: Calculate mu as part of the response to be sent back to the
+			// verifier
 			long mu = 0;
-			
+
 			for (int i = 0; i < coefficients.size(); i++)
 			{
 				InputStream inputStream = encodedSlices.get(i);
@@ -573,11 +651,10 @@ public class MainWindow extends JFrame
 					mu += coefficients.get(i) * oneByte;
 				}
 			}
-			
+
 			// Print the calculated mu to console
 			System.out.println("Mu: " + mu);
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
