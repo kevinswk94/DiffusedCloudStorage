@@ -131,11 +131,15 @@ public class MainWindow extends JFrame
 					// Erasure encodes the input file and returns a list of the InputStreams generated
 					List<InputStream> encodedSlices = getErasureEncodedFileSlices(_inputFile);
 					
-					//printInputStreamContents(encodedSlices);
+					// Streams are not empty here
+					printInputStreamContents(encodedSlices);
 					
 					// Generate list of authenticators
 					for (InputStream inputStream : encodedSlices)
 						_listOfAuthenticators.add(calculateAuthenticationValue(inputStream));
+					
+					// Streams are blank here. They seem to close after being passed to another method
+					//printInputStreamContents(encodedSlices2);
 					
 					// Displays the values of the authenticators to console
 					System.out.print("Authenticators: ");
