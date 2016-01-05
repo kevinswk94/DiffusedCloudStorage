@@ -391,6 +391,11 @@ public class MainWindow extends JFrame
 
 		return lsSegmentedBytes;
 	}
+	
+	private List<byte[]> convertInputStreamToByteArray(List<InputStream> listOfInputStreams)
+	{
+		
+	}
 
 	/**
 	 * Gets randomly chosen n number of items from a list
