@@ -16,6 +16,7 @@ import java.io.SequenceInputStream;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,6 +54,7 @@ public class MainWindow extends JFrame
 	private int _alpha = generateSecureRandomInteger(_p); // random integer within large prime p
 	private int _key = generatePRFKeyK();
 	private List<Long> _listOfAuthenticators = new ArrayList<Long>();
+	private List<Long> _listOfAuthenticators2 = new ArrayList<Long>();
 
 	/**
 	 * Launch the application.
@@ -130,27 +132,26 @@ public class MainWindow extends JFrame
 					// splitAndCombineFile();
 
 					// Erasure encodes the input file and returns a list of the InputStreams generated
+					// InputStreams will become empty after using it in a method
 					List<InputStream> encodedSlices = getErasureEncodedFileSlices(_inputFile);
-					List<ByteArrayInput> encodedSlicesBytes = convertInputStreamToByteArrayInputStream(encodedSlices);
 					
-					printByteArrayInputStreamContents(encodedSlicesBytes);
+					// Convert the InputStreams into Byte Arrays
+					List<byte[]> encodedSliceBytes = convertInputStreamToByteArray(encodedSlices);
 					
-					// Streams are not empty here
-					//printInputStreamContents(encodedSlices);
+					//printByteArray(encodedSliceBytes);
 
 					// Generate list of authenticators
-					for (InputStream inputStream : encodedSlices)
-						_listOfAuthenticators.add(calculateAuthenticationValue(inputStream));
+					/*for (InputStream inputStream : encodedSlices)
+						_listOfAuthenticators.add(calculateAuthenticationValue(inputStream));*/
+					
+					// Generate list of authenticators using byte arrays
+					for (byte[] ba : encodedSliceBytes)
+						_listOfAuthenticators.add(calculateAuthenticationValue(ba));
 
-					// Streams are blank here. They seem to close after being passed to another method
-					// printInputStreamContents(encodedSlices2);
-					printByteArrayInputStreamContents(encodedSlicesBytes);
-
-					// Displays the values of the authenticators to console
+					// Displays the values of _listOfAuthenticators to console
 					System.out.print("Authenticators: ");
 					for (long i : _listOfAuthenticators)
 						System.out.print(i + ", ");
-
 					System.out.println();
 
 					// TODO: Create challenge set of L indices and L random coefficients
@@ -171,7 +172,8 @@ public class MainWindow extends JFrame
 
 					// Sends Q to the prover
 					// pseudo code: prover(List<InputStream> Q, List<InputStream> encodedSlices)
-					prover(Q, encodedSlices);
+					//prover(Q, encodedSlices);
+					proverr(Q, encodedSliceBytes);
 
 				} catch (Exception ex)
 				{
@@ -367,9 +369,9 @@ public class MainWindow extends JFrame
 		// return lsSegmented;
 	}
 	
-	private List<ByteArrayInputStream> convertInputStreamToByteArrayInputStream(List<InputStream> listOfInputStreams)
+	private List<byte[]> convertInputStreamToByteArray(List<InputStream> listOfInputStreams)
 	{
-		List<ByteArrayInputStream> lsSegmentedBytes = new ArrayList<ByteArrayInputStream>();
+		List<byte[]> listOfByteArrays = new ArrayList<byte[]>();
 		
 		for (InputStream is : listOfInputStreams)
 		{
@@ -386,15 +388,10 @@ public class MainWindow extends JFrame
 			{
 				ex.printStackTrace();
 			}
-			lsSegmentedBytes.add(new ByteArrayInputStream(buffer.toByteArray()));
+			listOfByteArrays.add(buffer.toByteArray());
 		}
-
-		return lsSegmentedBytes;
-	}
-	
-	private List<byte[]> convertInputStreamToByteArray(List<InputStream> listOfInputStreams)
-	{
 		
+		return listOfByteArrays;
 	}
 
 	/**
@@ -485,6 +482,10 @@ public class MainWindow extends JFrame
 		return result;
 	}
 
+	/**
+	 * Generates a secure random integer to be used as key k
+	 * @return
+	 */
 	private int generatePRFKeyK()
 	{
 		Random rand = new Random();
@@ -522,6 +523,24 @@ public class MainWindow extends JFrame
 		authenticator = _key + blockXAlpha;
 		return authenticator;
 	}
+	
+	private long calculateAuthenticationValue(byte[] ba)
+	{
+		long authenticator;
+		long blockXAlpha = 0;
+		
+		try
+		{
+			for (byte b : ba)
+				blockXAlpha += _alpha * b;
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		
+		authenticator = _key + blockXAlpha;
+		return authenticator;
+	}
 
 	private void printInputStreamContents(List<InputStream> lis)
 	{
@@ -534,9 +553,7 @@ public class MainWindow extends JFrame
 				System.out.println("Stream " + count++ + ": ");
 				int oneByte;
 				while ((oneByte = is.read()) != -1)
-				{
 					System.out.write(oneByte);
-				}
 				System.out.println();
 				System.out.flush();
 			}
@@ -553,9 +570,7 @@ public class MainWindow extends JFrame
 			// Prints the contents of each InputStream to console
 			int oneByte;
 			while ((oneByte = is.read()) != -1)
-			{
 				System.out.write(oneByte);
-			}
 			System.out.println();
 			System.out.flush();
 		} catch (Exception ex)
@@ -604,14 +619,43 @@ public class MainWindow extends JFrame
 			ex.printStackTrace();
 		}
 	}
+	
+	private void printByteArray(List<byte[]> loba)
+	{
+		int count = 1;
+		for (byte[] ba : loba)
+		{
+			System.out.println("Stream " + count++ + ": ");
+			System.out.println("Array length: " + ba.length);
+			for (byte b : ba)
+				System.out.write(b);
+			System.out.println();
+			System.out.flush();
+		}
+	}
+	
+	private void printByteArray(byte[] ba)
+	{
+		System.out.println("Stated byte count: " + ba.length);
+		int counter = 0;
+		for (byte b : ba)
+		{
+			if (b != -1)
+			{
+				System.out.write(b);
+				counter++;
+			}
+			else
+				break;
+		}
+			
+		System.out.flush();
+		System.out.println("Actual byte count: " + counter);
+		System.out.println();
+	}
 
-	/**
-	 * Calculates sigma and mu to be returned to the verifier
-	 * 
-	 * @param Q
-	 */
+	
 	private void prover(List<Integer> Q, List<InputStream> encodedSlices)
-	// private List<Integer> prover(List<Integer> Q, List<Integer> encodedSlices)
 	{
 
 		System.out.println("EncodedSlices size: " + encodedSlices.size());
@@ -659,6 +703,62 @@ public class MainWindow extends JFrame
 
 			// Print the calculated mu to console
 			System.out.println("Mu: " + mu);
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Calculates sigma and mu to be returned to the verifier
+	 * @param Q
+	 */
+	
+	private void proverr(List<Integer> Q, List<byte[]> encodedSliceBytes)
+	{
+		System.out.println("EncodedSlices size: " + encodedSliceBytes.size());
+
+		try
+		{
+			// Calculate sigma as part of the response to be sent back to the verifier
+			long sigma = 0;
+
+			List<Integer> coefficients = new ArrayList<Integer>();
+			for (int i = 1; i < Q.size() + 1; i += 2)
+			{
+				coefficients.add(Q.get(i));
+			}
+
+			for (int i = 0; i < _listOfAuthenticators.size(); i++)
+			{
+				sigma += coefficients.get(i) * _listOfAuthenticators.get(i);
+			}
+
+			// Print the coefficients to console
+			System.out.print("Coefficients: ");
+			for (int i : coefficients)
+				System.out.print(i + ", ");
+
+			System.out.println();
+
+			// Print the calculated sigma to console
+			System.out.println("Sigma: " + sigma);
+
+			/* ///////////////////////////////////////////////////////////////////////////// */			
+			
+			// Calculate mu as part of the response to be sent back to the verifier
+			long mu = 0;
+			
+			for (int i = 0; i < coefficients.size(); i++)
+			{
+				byte[] ba = encodedSliceBytes.get(i);
+				int coefficient = coefficients.get(i);
+				for (byte b : ba)
+					mu += coefficient * b;
+			}
+
+			System.out.println("Mu: " + mu);
+			
 		} catch (Exception ex)
 		{
 			ex.printStackTrace();
