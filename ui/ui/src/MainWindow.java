@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -154,7 +155,9 @@ public class MainWindow extends JFrame
 					for (int i = 1; i <= _listOfAuthenticators.size(); i++)
 					{
 						Q.add(i);
-						Q.add(generateSecureRandomInteger(_p));
+						
+						//Q.add(generateSecureRandomInteger(_p));
+						Q.add(generateSecureRandomInteger(255));
 					}
 
 					// Sends Q and file blocks to the prover. Get the response back
