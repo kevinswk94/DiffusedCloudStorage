@@ -54,7 +54,7 @@ public class MainWindow extends JFrame
 	private int _alpha = generateSecureRandomInteger(_p); // random integer within large prime p
 	private int _key = generatePRFKeyK();
 	private List<Long> _listOfAuthenticators = new ArrayList<Long>();
-	private List<Long> _listOfAuthenticators2 = new ArrayList<Long>();
+	private List<Integer> _coefficients = new ArrayList<Integer>();
 
 	/**
 	 * Launch the application.
@@ -138,23 +138,16 @@ public class MainWindow extends JFrame
 					// Convert the InputStreams into Byte Arrays
 					List<byte[]> encodedSliceBytes = convertInputStreamToByteArray(encodedSlices);
 					
-					//printByteArray(encodedSliceBytes);
-
-					// Generate list of authenticators
-					/*for (InputStream inputStream : encodedSlices)
-						_listOfAuthenticators.add(calculateAuthenticationValue(inputStream));*/
-					
 					// Generate list of authenticators using byte arrays
 					for (byte[] ba : encodedSliceBytes)
 						_listOfAuthenticators.add(calculateAuthenticationValue(ba));
 
-					// Displays the values of _listOfAuthenticators to console
-					System.out.print("Authenticators: ");
-					for (long i : _listOfAuthenticators)
-						System.out.print(i + ", ");
+					System.out.println("Authenticators: ");
+					for (long l : _listOfAuthenticators)
+						System.out.print(l + ", ");
 					System.out.println();
-
-					// TODO: Create challenge set of L indices and L random coefficients
+					
+					// Create challenge set of L indices and L random coefficients
 					// int qSize = 5;
 					List<Integer> Q = new ArrayList<Integer>();
 
@@ -164,16 +157,9 @@ public class MainWindow extends JFrame
 						Q.add(generateSecureRandomInteger(_p));
 					}
 
-					System.out.print("Q: ");
-					for (int i : Q)
-						System.out.print(i + ", ");
-
-					System.out.println();
-
-					// Sends Q to the prover
-					// pseudo code: prover(List<InputStream> Q, List<InputStream> encodedSlices)
-					//prover(Q, encodedSlices);
-					proverr(Q, encodedSliceBytes);
+					// Sends Q and file blocks to the prover. Get the response back
+					List<Long> response = prover(Q, encodedSliceBytes);
+					verifier(response);
 
 				} catch (Exception ex)
 				{
@@ -541,89 +527,35 @@ public class MainWindow extends JFrame
 		authenticator = _key + blockXAlpha;
 		return authenticator;
 	}
-
-	private void prover(List<Integer> Q, List<InputStream> encodedSlices)
-	{
-
-		System.out.println("EncodedSlices size: " + encodedSlices.size());
-
-		try
-		{
-			// TODO: Calculate sigma as part of the response to be sent back to
-			// the verifier
-			long sigma = 0;
-
-			List<Integer> coefficients = new ArrayList<Integer>();
-			for (int i = 1; i < Q.size() + 1; i += 2)
-			{
-				coefficients.add(Q.get(i));
-			}
-
-			for (int i = 0; i < _listOfAuthenticators.size(); i++)
-			{
-				sigma += coefficients.get(i) * _listOfAuthenticators.get(i);
-			}
-
-			// Print the coefficients to console
-			System.out.print("Coefficients: ");
-			for (int i : coefficients)
-				System.out.print(i + ", ");
-
-			System.out.println();
-
-			// Print the calculated sigma to console
-			System.out.println("Sigma: " + sigma);
-
-			// TODO: Calculate mu as part of the response to be sent back to the
-			// verifier
-			long mu = 0;
-
-			for (int i = 0; i < coefficients.size(); i++)
-			{
-				InputStream inputStream = encodedSlices.get(i);
-				int oneByte;
-				while ((oneByte = inputStream.read()) != -1)
-				{
-					mu += coefficients.get(i) * oneByte;
-				}
-			}
-
-			// Print the calculated mu to console
-			System.out.println("Mu: " + mu);
-		} catch (Exception ex)
-		{
-			ex.printStackTrace();
-		}
-	}
 	
 	/**
 	 * Calculates sigma and mu to be returned to the verifier
 	 * @param Q The randomly generated index-coefficient challenge
 	 * @param encodedSliceBytes The list of byte arrays that contain the file slices
 	 */
-	private void proverr(List<Integer> Q, List<byte[]> encodedSliceBytes)
+	private List<Long> prover(List<Integer> Q, List<byte[]> encodedSliceBytes)
 	{
 		System.out.println("EncodedSlices size: " + encodedSliceBytes.size());
-
+		List<Long> response = new ArrayList<Long>();
 		try
 		{
 			// Calculate sigma as part of the response to be sent back to the verifier
 			long sigma = 0;
 
-			List<Integer> coefficients = new ArrayList<Integer>();
+			
 			for (int i = 1; i < Q.size() + 1; i += 2)
 			{
-				coefficients.add(Q.get(i));
+				_coefficients.add(Q.get(i));
 			}
 
 			for (int i = 0; i < _listOfAuthenticators.size(); i++)
 			{
-				sigma += coefficients.get(i) * _listOfAuthenticators.get(i);
+				sigma += _coefficients.get(i) * _listOfAuthenticators.get(i);
 			}
 
 			// Print the coefficients to console
 			System.out.print("Coefficients: ");
-			for (int i : coefficients)
+			for (int i : _coefficients)
 				System.out.print(i + ", ");
 
 			System.out.println();
@@ -636,20 +568,45 @@ public class MainWindow extends JFrame
 			// Calculate mu as part of the response to be sent back to the verifier
 			long mu = 0;
 			
-			for (int i = 0; i < coefficients.size(); i++)
+			for (int i = 0; i < _coefficients.size(); i++)
 			{
 				byte[] ba = encodedSliceBytes.get(i);
-				int coefficient = coefficients.get(i);
+				int coefficient = _coefficients.get(i);
 				for (byte b : ba)
 					mu += coefficient * b;
 			}
 
 			System.out.println("Mu: " + mu);
 			
+			response.add(sigma);
+			response.add(mu);
+			
+			
 		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
+		
+		return response;
+	}
+	
+	/**
+	 * 
+	 * @param response
+	 */
+	private void verifier(List<Long> response)
+	{
+		long sigma = response.get(0);
+		long mu = response.get(1);
+		long keyXCoefficient = 0;
+	
+		for (int i : _coefficients)
+			keyXCoefficient += _key * i;
+		
+		long verifySigma = _alpha * mu + keyXCoefficient;
+		
+		System.out.println("Sigma: " + sigma);
+		System.out.println("Verify Sigma: " + verifySigma);
 	}
 	
 	private void printInputStreamContents(List<InputStream> lis)
