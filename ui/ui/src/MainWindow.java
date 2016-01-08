@@ -42,6 +42,8 @@ import com.amazonaws.services.identitymanagement.model.summaryKeyType;
 import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
+import javax.swing.JLabel;
+import javax.swing.SpringLayout;
 
 public class MainWindow extends JFrame
 {
@@ -56,6 +58,20 @@ public class MainWindow extends JFrame
 	private int _key = generatePRFKeyK();
 	private List<Long> _listOfAuthenticators = new ArrayList<Long>();
 	private List<Integer> _coefficients = new ArrayList<Integer>();
+	private JTextField tb_alpha;
+	private JTextField tb_prfkey;
+	private JLabel lbl_Alpha;
+	private JLabel lbl_PrfKey;
+	private JLabel lbl_sigma;
+	private JTextField tb_sigma;
+	private JLabel lbl_mu;
+	private JTextField tb_mu;
+	private JLabel lbl_computedSigma;
+	private JTextField tb_calculatedSigma;
+	private JLabel lbl_prime;
+	private JTextField tb_prime;
+	private JLabel lbl_result;
+	private JTextField tb_result;
 
 	/**
 	 * Launch the application.
@@ -83,9 +99,10 @@ public class MainWindow extends JFrame
 	 */
 	public MainWindow()
 	{
+		setTitle("Standalone Prover / Verifier");
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 450, 300);
+		setBounds(100, 100, 450, 365);
 		panel_contentPane = new JPanel();
 		panel_contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		panel_contentPane.setLayout(new BorderLayout(0, 0));
@@ -100,7 +117,7 @@ public class MainWindow extends JFrame
 		panel_chooseFile.add(tb_filename, "1, 1, fill, fill");
 		tb_filename.setColumns(1);
 
-		JButton btn_chooseFile = new JButton("Choose File");
+		JButton btn_chooseFile = new JButton("File");
 		btn_chooseFile.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent arg0)
@@ -121,15 +138,19 @@ public class MainWindow extends JFrame
 
 		JPanel panel_manipulationControls = new JPanel();
 		panel_contentPane.add(panel_manipulationControls, BorderLayout.CENTER);
-		panel_manipulationControls.setLayout(null);
 
-		JButton btnSplit = new JButton("Split");
-		btnSplit.addActionListener(new ActionListener()
+		JButton btn_verify = new JButton("Verify");
+		btn_verify.setBounds(195, 250, 83, 23);
+		btn_verify.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent arg0)
 			{
 				try
 				{
+					tb_prime.setText(String.valueOf(_p));
+					tb_alpha.setText(String.valueOf(_alpha));
+					tb_prfkey.setText(String.valueOf(_key));
+					
 					// splitAndCombineFile();
 
 					// Erasure encodes the input file and returns a list of the InputStreams generated
@@ -170,8 +191,78 @@ public class MainWindow extends JFrame
 				}
 			}
 		});
-		btnSplit.setBounds(175, 89, 84, 33);
-		panel_manipulationControls.add(btnSplit);
+		panel_manipulationControls.setLayout(null);
+		panel_manipulationControls.add(btn_verify);
+		
+		tb_alpha = new JTextField();
+		tb_alpha.setEditable(false);
+		tb_alpha.setBounds(203, 82, 145, 20);
+		panel_manipulationControls.add(tb_alpha);
+		tb_alpha.setColumns(10);
+		
+		tb_prfkey = new JTextField();
+		tb_prfkey.setEditable(false);
+		tb_prfkey.setBounds(203, 49, 145, 20);
+		panel_manipulationControls.add(tb_prfkey);
+		tb_prfkey.setColumns(10);
+		
+		lbl_Alpha = new JLabel("Alpha:");
+		lbl_Alpha.setBounds(49, 49, 83, 20);
+		panel_manipulationControls.add(lbl_Alpha);
+		
+		lbl_PrfKey = new JLabel("PRF Key:");
+		lbl_PrfKey.setBounds(49, 82, 83, 20);
+		panel_manipulationControls.add(lbl_PrfKey);
+		
+		lbl_sigma = new JLabel("Sigma:");
+		lbl_sigma.setBounds(49, 113, 54, 20);
+		panel_manipulationControls.add(lbl_sigma);
+		
+		tb_sigma = new JTextField();
+		tb_sigma.setEditable(false);
+		tb_sigma.setColumns(10);
+		tb_sigma.setBounds(203, 113, 145, 20);
+		panel_manipulationControls.add(tb_sigma);
+		
+		lbl_mu = new JLabel("Mu:");
+		lbl_mu.setBounds(49, 144, 54, 20);
+		panel_manipulationControls.add(lbl_mu);
+		
+		tb_mu = new JTextField();
+		tb_mu.setEditable(false);
+		tb_mu.setColumns(10);
+		tb_mu.setBounds(203, 144, 145, 20);
+		panel_manipulationControls.add(tb_mu);
+		
+		lbl_computedSigma = new JLabel("Calculated Sigma:");
+		lbl_computedSigma.setBounds(49, 175, 124, 20);
+		panel_manipulationControls.add(lbl_computedSigma);
+		
+		tb_calculatedSigma = new JTextField();
+		tb_calculatedSigma.setEditable(false);
+		tb_calculatedSigma.setColumns(10);
+		tb_calculatedSigma.setBounds(203, 175, 145, 20);
+		panel_manipulationControls.add(tb_calculatedSigma);
+		
+		lbl_prime = new JLabel("Prime:");
+		lbl_prime.setBounds(49, 18, 83, 20);
+		panel_manipulationControls.add(lbl_prime);
+		
+		tb_prime = new JTextField();
+		tb_prime.setEditable(false);
+		tb_prime.setColumns(10);
+		tb_prime.setBounds(203, 18, 145, 20);
+		panel_manipulationControls.add(tb_prime);
+		
+		lbl_result = new JLabel("Result:");
+		lbl_result.setBounds(49, 206, 54, 20);
+		panel_manipulationControls.add(lbl_result);
+		
+		tb_result = new JTextField();
+		tb_result.setEditable(false);
+		tb_result.setColumns(10);
+		tb_result.setBounds(203, 206, 145, 20);
+		panel_manipulationControls.add(tb_result);
 	}
 
 	private void splitAndCombineFile()
@@ -583,7 +674,7 @@ public class MainWindow extends JFrame
 			
 			response.add(sigma);
 			response.add(mu);
-			
+			tb_mu.setText(String.valueOf(mu));
 			
 		} catch (Exception ex)
 		{
@@ -610,6 +701,14 @@ public class MainWindow extends JFrame
 		
 		System.out.println("Sigma: " + sigma);
 		System.out.println("Verify Sigma: " + verifySigma);
+		
+		tb_sigma.setText(String.valueOf(sigma));
+		tb_calculatedSigma.setText(String.valueOf(verifySigma));
+		
+		if (sigma == verifySigma)
+			tb_result.setText("Verified!");
+		else
+			tb_result.setText("Not Verified!");
 	}
 	
 	private void printInputStreamContents(List<InputStream> lis)
