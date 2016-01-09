@@ -9,7 +9,7 @@ import javax.swing.border.EmptyBorder;
 
 public class Prover extends JFrame
 {
-
+	// new comment from split-verifier-prover
 	private JPanel contentPane;
 
 	/**
