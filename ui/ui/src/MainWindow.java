@@ -334,7 +334,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Takes a list of InputStreams and convert them into byte arrays, as the Input Streams clear after they are read
-	 * 
 	 * @param listOfInputStreams
 	 * @return List of byte arrays
 	 */
@@ -364,7 +363,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Gets randomly chosen n number of items from a list
-	 * 
 	 * @param lst List of InputStreams
 	 * @param n number of elements to be randomly chosen
 	 * @return Returns a list of randomly picked InputStreams
@@ -378,7 +376,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Generates a large prime using a couple of SecureRandom instances
-	 * 
 	 * @return Returns a large prime p
 	 */
 	private int generateLargePrime()
@@ -422,7 +419,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Generates a secure random value between 0 and bound
-	 * 
 	 * @param bound The upper limit
 	 * @return Returns a securely generated random integer
 	 */
@@ -450,7 +446,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Generates a random integer to be used as PRF key k
-	 * 
 	 * @return Returns generated integer, PRF key k
 	 */
 	private int generatePRFKeyK()
@@ -461,7 +456,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Calculates the authentication value for a given block of the input file
-	 * 
 	 * @param ba A byte array block of the erasure encoded file
 	 * @return Returns the generated authentication value
 	 */
@@ -485,7 +479,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Accepts Q, encodedSliceBytes and list of authenticators and calculates sigma and mu to be returned to the verifier
-	 * 
 	 * @param Q The randomly generated index-coefficient challenge
 	 * @param encodedSliceBytes The list of byte arrays that contain the file slices
 	 * @param listOfAuthenticators A list of authenticators used in calculating sigma
@@ -530,7 +523,6 @@ public class MainWindow extends JFrame
 
 	/**
 	 * Accepts the response from the Prover (sigma & mu), calculate verifySigma and compare them
-	 * 
 	 * @param response List that contains sigma and mu
 	 * @param Q The list of coefficients used to calculate verifySigma
 	 * @return Returns a bool to determine whether the sigmas match
