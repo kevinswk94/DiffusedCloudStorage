@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.io.SequenceInputStream;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -129,7 +130,7 @@ public class Verifier extends JFrame
 				for (byte[] ba : encodedSliceBytes)
 					listOfAuthenticators.add(calculateAuthenticationValue(ba));
 				
-				
+				saveAuthenticatorsToDisk(listOfAuthenticators);
 			}
 		});
 		btn_store.setBounds(170, 116, 89, 49);
@@ -262,26 +263,27 @@ public class Verifier extends JFrame
 	}
 	
 	/**
-	 * [INCOMPLETE] Save the authenticators to a comma delimited file
+	 * Save the authenticators to a comma delimited file
 	 * @param listOfAuthenticators
 	 */
 	private void saveAuthenticatorsToDisk(List<Long> listOfAuthenticators)
 	{
 		try
 		{
-			FileOutputStream outputFile = new FileOutputStream(_currentPath + tb_filename.getText() + ".auth");
-			for (int i = 0; i < listOfAuthenticators.size() -1; i++)
+			PrintWriter writer = new PrintWriter(_currentPath + tb_filename.getText() + ".auth", "UTF-8");
+			for (int i = 0; i < listOfAuthenticators.size(); i++)
 			{
-				/*if (listOfAuthenticators.get(i) != listOfAuthenticators.get(listOfAuthenticators.size() -1))
-					outputFile.write((int)listOfAuthenticators.get(i));*/
+				if (listOfAuthenticators.get(i) != listOfAuthenticators.get(listOfAuthenticators.size() -1))
+					writer.print(listOfAuthenticators.get(i) + ",");
+				else if (listOfAuthenticators.get(i) == listOfAuthenticators.get(listOfAuthenticators.size() -1))
+					writer.print(listOfAuthenticators.get(i));
 			}
-			outputFile.close();
+			writer.close();
 		} catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
 	}
-	
 	
 	/**
 	 * Generates a large prime using a couple of SecureRandom instances
@@ -331,12 +333,6 @@ public class Verifier extends JFrame
 	 * @param bound The upper limit
 	 * @return Returns a securely generated random integer
 	 */
-	
-	/**
-	 * Generates a secure random value between 0 and bound
-	 * @param bound The upper limit
-	 * @return Returns a securely generated random integer
-	 */
 	private int generateSecureRandomInteger(int bound)
 	{
 		int result = 0;
@@ -358,11 +354,6 @@ public class Verifier extends JFrame
 
 		return result;
 	}
-
-	/**
-	 * Generates a random integer to be used as PRF key k
-	 * @return Returns generated integer, PRF key k
-	 */
 	
 	/**
 	 * Generates a random integer to be used as PRF key k
@@ -373,12 +364,6 @@ public class Verifier extends JFrame
 		Random rand = new Random();
 		return (int) (rand.nextDouble() * 10000);
 	}
-
-	/**
-	 * Calculates the authentication value for a given block of the input file
-	 * @param ba A byte array block of the erasure encoded file
-	 * @return Returns the generated authentication value
-	 */
 	
 	/**
 	 * Calculates the authentication value for a given block of the input file
