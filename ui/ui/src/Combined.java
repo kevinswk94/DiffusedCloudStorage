@@ -3,12 +3,16 @@ package ui.src;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import javax.swing.JButton;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.JFileChooser;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JLabel;
 import javax.swing.JTextField;
+import javax.swing.JButton;
 
 import sg.edu.nyp.sit.svds.client.ida.IInfoDispersal;
 import sg.edu.nyp.sit.svds.client.ida.RabinImpl2;
@@ -32,10 +36,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Verifier extends JFrame
+public class Combined extends JFrame
 {
 	private File _inputFile; // The input file
-	private String _currentPath; // The path of the directory the user is currently in
+	private String _currentPath; // The path of the directory the user is currently inv
 	
 	private int _p; // large prime
 	private int _alpha; // random integer within large prime p
@@ -43,6 +47,12 @@ public class Verifier extends JFrame
 	
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
+	private JTextField tb_primeP;
+	private JTextField tb_alpha;
+	private JTextField tb_prfKey;
+	private JTextField tb_authFilename;
+	private JTextField textField;
+	private JTextField textField_1;
 
 	/**
 	 * Launch the application.
@@ -55,7 +65,7 @@ public class Verifier extends JFrame
 			{
 				try
 				{
-					Verifier frame = new Verifier();
+					Combined frame = new Combined();
 					frame.setVisible(true);
 				} catch (Exception e)
 				{
@@ -68,18 +78,31 @@ public class Verifier extends JFrame
 	/**
 	 * Create the frame.
 	 */
-	public Verifier()
+	public Combined()
 	{
+		setTitle("Proof of Retrievability");
 		setResizable(false);
-		setTitle("Verifier");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 423, 300);
+		setBounds(100, 100, 450, 300);
 		panel_contentPane = new JPanel();
 		panel_contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(panel_contentPane);
 		panel_contentPane.setLayout(null);
 
-		JButton btn_chooseFile = new JButton("File");
+		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane.setBounds(0, 0, 444, 271);
+		panel_contentPane.add(tabbedPane);
+
+		JPanel panel_splitterPane = new JPanel();
+		tabbedPane.addTab("Splitter", null, panel_splitterPane, null);
+		panel_splitterPane.setLayout(null);
+
+		tb_filename = new JTextField();
+		tb_filename.setBounds(10, 11, 320, 20);
+		panel_splitterPane.add(tb_filename);
+		tb_filename.setColumns(10);
+
+		JButton btn_chooseFile = new JButton("Choose");
 		btn_chooseFile.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent arg0)
@@ -96,17 +119,41 @@ public class Verifier extends JFrame
 				}
 			}
 		});
-		btn_chooseFile.setBounds(332, 11, 75, 23);
-		panel_contentPane.add(btn_chooseFile);
+		btn_chooseFile.setBounds(340, 10, 89, 23);
+		panel_splitterPane.add(btn_chooseFile);
 
-		tb_filename = new JTextField();
-		tb_filename.setEditable(false);
-		tb_filename.setBounds(10, 12, 300, 20);
-		panel_contentPane.add(tb_filename);
-		tb_filename.setColumns(10);
+		JLabel lbl_primeP = new JLabel("Prime:");
+		lbl_primeP.setBounds(32, 80, 89, 14);
+		panel_splitterPane.add(lbl_primeP);
 
-		JButton btn_store = new JButton("Store");
-		btn_store.addActionListener(new ActionListener()
+		JLabel lbl_alpha = new JLabel("Alpha:");
+		lbl_alpha.setBounds(32, 105, 89, 14);
+		panel_splitterPane.add(lbl_alpha);
+
+		JLabel lbl_prfKey = new JLabel("PRF Key:");
+		lbl_prfKey.setBounds(32, 130, 89, 14);
+		panel_splitterPane.add(lbl_prfKey);
+
+		tb_primeP = new JTextField();
+		tb_primeP.setEditable(false);
+		tb_primeP.setBounds(127, 77, 131, 20);
+		panel_splitterPane.add(tb_primeP);
+		tb_primeP.setColumns(10);
+
+		tb_alpha = new JTextField();
+		tb_alpha.setEditable(false);
+		tb_alpha.setColumns(10);
+		tb_alpha.setBounds(127, 102, 131, 20);
+		panel_splitterPane.add(tb_alpha);
+
+		tb_prfKey = new JTextField();
+		tb_prfKey.setEditable(false);
+		tb_prfKey.setColumns(10);
+		tb_prfKey.setBounds(127, 127, 131, 20);
+		panel_splitterPane.add(tb_prfKey);
+
+		JButton btn_split = new JButton("Split");
+		btn_split.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e)
 			{
@@ -114,14 +161,19 @@ public class Verifier extends JFrame
 				_p = generateLargePrime();
 				_alpha = generateSecureRandomInteger(_p);
 				_key = generatePRFKeyK();
-				
+
+				// Displays them on the GUI
+				tb_primeP.setText(String.valueOf(_p));
+				tb_alpha.setText(String.valueOf(_alpha));
+				tb_prfKey.setText(String.valueOf(_key));
+
 				// Erasure encodes the input file and returns a list of the InputStreams generated
 				// InputStreams will become empty after using it in a method
 				List<InputStream> encodedSlices = getErasureEncodedFileSlices(_inputFile);
 
 				// Convert the InputStreams into Byte Arrays
 				List<byte[]> encodedSliceBytes = convertInputStreamToByteArray(encodedSlices);
-
+				
 				// Save file slices to disk
 				saveFileSlicesToDisk(encodedSliceBytes);
 				
@@ -132,14 +184,74 @@ public class Verifier extends JFrame
 				
 				// Save authenticators to disk
 				saveAuthenticatorsToDisk(listOfAuthenticators);
-				
-				// TODO: Sends the authenticators and slices to the prover and gets response back
-				
-				// TODO: Calculate own response and compare it to the returned response
 			}
 		});
-		btn_store.setBounds(170, 116, 89, 49);
-		panel_contentPane.add(btn_store);
+		btn_split.setBounds(302, 90, 89, 44);
+		panel_splitterPane.add(btn_split);
+
+		JPanel panel_proverPane = new JPanel();
+		tabbedPane.addTab("Prover", null, panel_proverPane, null);
+		panel_proverPane.setLayout(null);
+		
+		tb_authFilename = new JTextField();
+		tb_authFilename.setBounds(10, 11, 320, 20);
+		panel_proverPane.add(tb_authFilename);
+		tb_authFilename.setColumns(10);
+		
+		JButton btn_chooseAuthFile = new JButton("Choose");
+		btn_chooseAuthFile.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				JFileChooser fc = new JFileChooser("C:\\Sample Files");
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Authentication File", "auth");
+				fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				fc.setFileFilter(filter);
+
+				int validFile = fc.showOpenDialog(panel_contentPane);
+				if (validFile == JFileChooser.APPROVE_OPTION)
+				{
+					
+				}
+			}
+		});
+		btn_chooseAuthFile.setBounds(340, 10, 89, 23);
+		panel_proverPane.add(btn_chooseAuthFile);
+
+		JLabel lblNewLabel = new JLabel("Sigma:");
+		lblNewLabel.setBounds(32, 87, 89, 14);
+		panel_proverPane.add(lblNewLabel);
+
+		JLabel lblMu = new JLabel("Mu:");
+		lblMu.setBounds(32, 112, 89, 14);
+		panel_proverPane.add(lblMu);
+
+		textField = new JTextField();
+		textField.setEditable(false);
+		textField.setBounds(131, 84, 131, 20);
+		panel_proverPane.add(textField);
+		textField.setColumns(10);
+
+		textField_1 = new JTextField();
+		textField_1.setEditable(false);
+		textField_1.setColumns(10);
+		textField_1.setBounds(131, 109, 131, 20);
+		panel_proverPane.add(textField_1);
+
+		JButton btnNewButton = new JButton("Prove!");
+		btnNewButton.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+
+			}
+		});
+		btnNewButton.setBounds(302, 87, 89, 39);
+		panel_proverPane.add(btnNewButton);
+
+		JPanel panel_verifierPane = new JPanel();
+		tabbedPane.addTab("Verifier", null, panel_verifierPane, null);
+		panel_verifierPane.setLayout(null);
 	}
 	
 	private List<InputStream> getErasureEncodedFileSlices(File inFile)
@@ -242,55 +354,6 @@ public class Verifier extends JFrame
 	}
 	
 	/**
-	 * Saves the individual file slices to disk
-	 * @param loba The list of byte arrays to be saved
-	 */
-	private void saveFileSlicesToDisk(List<byte[]> loba)
-	{
-		try
-		{
-			int counter = 0;
-			for (byte[] ba : loba)
-			{
-				ByteArrayInputStream bais = new ByteArrayInputStream(ba);
-				FileOutputStream outputFile = new FileOutputStream(_currentPath + tb_filename.getText() + ".s" + counter++);
-				
-				int d;
-				while ((d = bais.read()) != -1)
-					outputFile.write(d);
-				
-				outputFile.close();
-			}
-		} catch (Exception ex)
-		{
-			ex.printStackTrace();
-		}
-	}
-	
-	/**
-	 * Save the authenticators to a comma delimited file
-	 * @param listOfAuthenticators
-	 */
-	private void saveAuthenticatorsToDisk(List<Long> listOfAuthenticators)
-	{
-		try
-		{
-			PrintWriter writer = new PrintWriter(_currentPath + tb_filename.getText() + ".auth", "UTF-8");
-			for (int i = 0; i < listOfAuthenticators.size(); i++)
-			{
-				if (listOfAuthenticators.get(i) != listOfAuthenticators.get(listOfAuthenticators.size() -1))
-					writer.print(listOfAuthenticators.get(i) + ",");
-				else if (listOfAuthenticators.get(i) == listOfAuthenticators.get(listOfAuthenticators.size() -1))
-					writer.print(listOfAuthenticators.get(i));
-			}
-			writer.close();
-		} catch (Exception ex)
-		{
-			ex.printStackTrace();
-		}
-	}
-	
-	/**
 	 * Generates a large prime using a couple of SecureRandom instances
 	 * @return Returns a large prime p
 	 */
@@ -359,7 +422,7 @@ public class Verifier extends JFrame
 
 		return result;
 	}
-	
+
 	/**
 	 * Generates a random integer to be used as PRF key k
 	 * @return Returns generated integer, PRF key k
@@ -368,6 +431,32 @@ public class Verifier extends JFrame
 	{
 		Random rand = new Random();
 		return (int) (rand.nextDouble() * 10000);
+	}
+	
+	/**
+	 * Saves the individual file slices to disk
+	 * @param loba The list of byte arrays to be saved
+	 */
+	private void saveFileSlicesToDisk(List<byte[]> loba)
+	{
+		try
+		{
+			int counter = 0;
+			for (byte[] ba : loba)
+			{
+				ByteArrayInputStream bais = new ByteArrayInputStream(ba);
+				FileOutputStream outputFile = new FileOutputStream(_currentPath + tb_filename.getText() + ".s" + counter++);
+				
+				int d;
+				while ((d = bais.read()) != -1)
+					outputFile.write(d);
+				
+				outputFile.close();
+			}
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
 	}
 	
 	/**
@@ -391,5 +480,28 @@ public class Verifier extends JFrame
 
 		authenticator = _key + blockXAlpha;
 		return authenticator;
+	}
+	
+	/**
+	 * Save the authenticators to a comma delimited file
+	 * @param listOfAuthenticators
+	 */
+	private void saveAuthenticatorsToDisk(List<Long> listOfAuthenticators)
+	{
+		try
+		{
+			PrintWriter writer = new PrintWriter(_currentPath + tb_filename.getText() + ".auth", "UTF-8");
+			for (int i = 0; i < listOfAuthenticators.size(); i++)
+			{
+				if (listOfAuthenticators.get(i) != listOfAuthenticators.get(listOfAuthenticators.size() -1))
+					writer.print(listOfAuthenticators.get(i) + ",");
+				else if (listOfAuthenticators.get(i) == listOfAuthenticators.get(listOfAuthenticators.size() -1))
+					writer.print(listOfAuthenticators.get(i));
+			}
+			writer.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
 	}
 }
