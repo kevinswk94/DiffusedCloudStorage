@@ -31,14 +31,18 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.SequenceInputStream;
+import java.io.RandomAccessFile;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.io.FilenameUtils;
+
 public class Combined extends JFrame
 {
 	private File _inputFile; // The input file
+	private File _authenticatorFile; // The input file
 	private String _currentPath; // The path of the directory the user is currently inv
 	
 	private int _p; // large prime
@@ -184,6 +188,10 @@ public class Combined extends JFrame
 				
 				// Save authenticators to disk
 				saveAuthenticatorsToDisk(listOfAuthenticators);
+				
+				// TODO: Generate index coefficient pairs
+				
+				//TODO: Save index coefficient pairs to disk
 			}
 		});
 		btn_split.setBounds(302, 90, 89, 44);
@@ -194,6 +202,7 @@ public class Combined extends JFrame
 		panel_proverPane.setLayout(null);
 		
 		tb_authFilename = new JTextField();
+		tb_authFilename.setEditable(false);
 		tb_authFilename.setBounds(10, 11, 320, 20);
 		panel_proverPane.add(tb_authFilename);
 		tb_authFilename.setColumns(10);
@@ -211,7 +220,9 @@ public class Combined extends JFrame
 				int validFile = fc.showOpenDialog(panel_contentPane);
 				if (validFile == JFileChooser.APPROVE_OPTION)
 				{
-					
+					_currentPath = fc.getCurrentDirectory().toString() + "\\";
+					_authenticatorFile = fc.getSelectedFile();
+					tb_authFilename.setText(_authenticatorFile.getName());
 				}
 			}
 		});
@@ -243,7 +254,35 @@ public class Combined extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-
+				// TODO: Retrieve all the file slices corresponding to the authentication file
+				
+				//System.out.println(FilenameUtils.removeExtension(_authenticatorFile.getName()));;
+				List<File> listOfSlices = retrieveFileSlices(FilenameUtils.removeExtension(_authenticatorFile.getName()));
+				
+				// TODO: Convert file slices to byte arrays
+				
+				List<byte[]> sliceBytes = new ArrayList<byte[]>();
+				
+				for (File f : listOfSlices)
+				{
+					FileInputStream fis = null;
+					byte[] bytes = new byte[(int) f.length()];
+					
+					try
+					{
+						fis = new FileInputStream(f);
+						fis.read(bytes);
+						fis.close();
+					} catch (Exception ex)
+					{
+						ex.printStackTrace();
+					}
+					sliceBytes.add(bytes);
+				}
+				
+				// TODO: Perform the calculation of sigma and mu
+				
+				// TODO: Save sigma and mu to disk for the verifier to use
 			}
 		});
 		btnNewButton.setBounds(302, 87, 89, 39);
@@ -503,5 +542,29 @@ public class Combined extends JFrame
 		{
 			ex.printStackTrace();
 		}
+	}
+	
+	/**
+	 * Retrieves the file slices corresponding to the authenticator selected
+	 * @param filename The name of the file to be retrieved
+	 * @return Returns a list of the file slices corresponding to the authenticator selected
+	 */
+	private List<File> retrieveFileSlices(String filename)
+	{
+		List<File> listOfSlices = new ArrayList<File>();
+		int counter = 0;
+		while (true)
+		{
+			File f = new File(_currentPath + filename + ".s" + counter);
+			if(f.exists() && !f.isDirectory())
+			{
+				listOfSlices.add(f);
+				counter++;
+			}
+			else
+				break;
+		}
+		
+		return listOfSlices;
 	}
 }
