@@ -22,12 +22,14 @@ import sg.edu.nyp.sit.svds.metadata.IdaInfo;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.SequenceInputStream;
@@ -41,22 +43,27 @@ import org.apache.commons.io.FilenameUtils;
 
 public class Combined extends JFrame
 {
-	private File _inputFile; // The input file
-	private File _authenticatorFile; // The input file
+	private File _inputFile; // The input file to be split
+	private File _challengeFile; // The input challenge file
+	private File _responseFile; // The input response file
 	private String _currentPath; // The path of the directory the user is currently inv
-	
+
 	private int _p; // large prime
 	private int _alpha; // random integer within large prime p
 	private int _key; // random integer generated using a PRF
-	
+
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
 	private JTextField tb_primeP;
 	private JTextField tb_alpha;
 	private JTextField tb_prfKey;
-	private JTextField tb_authFilename;
+	private JTextField tb_chalFilename;
+	private JTextField tb_sigma;
+	private JTextField tb_mu;
+	private JTextField tb_respFilename;
+	private JTextField tb_fileSigma;
+	private JTextField tb_fileMu;
 	private JTextField textField;
-	private JTextField textField_1;
 
 	/**
 	 * Launch the application.
@@ -102,6 +109,7 @@ public class Combined extends JFrame
 		panel_splitterPane.setLayout(null);
 
 		tb_filename = new JTextField();
+		tb_filename.setEditable(false);
 		tb_filename.setBounds(10, 11, 320, 20);
 		panel_splitterPane.add(tb_filename);
 		tb_filename.setColumns(10);
@@ -177,43 +185,60 @@ public class Combined extends JFrame
 
 				// Convert the InputStreams into Byte Arrays
 				List<byte[]> encodedSliceBytes = convertInputStreamToByteArray(encodedSlices);
-				
+
 				// Save file slices to disk
 				saveFileSlicesToDisk(encodedSliceBytes);
-				
+
 				// Generate list of authenticators using byte arrays
 				List<Long> listOfAuthenticators = new ArrayList<Long>();
 				for (byte[] ba : encodedSliceBytes)
 					listOfAuthenticators.add(calculateAuthenticationValue(ba));
-				
+
 				// Save authenticators to disk
 				saveAuthenticatorsToDisk(listOfAuthenticators);
-				
-				// TODO: Generate index coefficient pairs
-				
-				//TODO: Save index coefficient pairs to disk
 			}
 		});
 		btn_split.setBounds(302, 90, 89, 44);
 		panel_splitterPane.add(btn_split);
 
+		JButton btnGenerateChallenge = new JButton("Generate Challenge");
+		btnGenerateChallenge.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent arg0)
+			{
+				// Retrieve authenticators from disk
+				List<Long> listOfAuthenticators = new ArrayList<Long>();
+				listOfAuthenticators = retrieveAuthenticatorsFromDisk(_inputFile.getName());
+
+				// Create challenge set of random coefficients
+				List<Integer> Q = new ArrayList<Integer>();
+				for (int i = 1; i <= listOfAuthenticators.size(); i++)
+					Q.add(generateSecureRandomInteger(255));
+
+				// Save index coefficient pairs to disk
+				saveChallengeToDisk(Q);
+			}
+		});
+		btnGenerateChallenge.setBounds(138, 179, 153, 29);
+		panel_splitterPane.add(btnGenerateChallenge);
+
 		JPanel panel_proverPane = new JPanel();
 		tabbedPane.addTab("Prover", null, panel_proverPane, null);
 		panel_proverPane.setLayout(null);
-		
-		tb_authFilename = new JTextField();
-		tb_authFilename.setEditable(false);
-		tb_authFilename.setBounds(10, 11, 320, 20);
-		panel_proverPane.add(tb_authFilename);
-		tb_authFilename.setColumns(10);
-		
-		JButton btn_chooseAuthFile = new JButton("Choose");
-		btn_chooseAuthFile.addActionListener(new ActionListener()
+
+		tb_chalFilename = new JTextField();
+		tb_chalFilename.setEditable(false);
+		tb_chalFilename.setBounds(10, 11, 320, 20);
+		panel_proverPane.add(tb_chalFilename);
+		tb_chalFilename.setColumns(10);
+
+		JButton btn_chooseChalFile = new JButton("Choose");
+		btn_chooseChalFile.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e)
 			{
 				JFileChooser fc = new JFileChooser("C:\\Sample Files");
-				FileNameExtensionFilter filter = new FileNameExtensionFilter("Authentication File", "auth");
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Challenge File", "chal");
 				fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 				fc.setFileFilter(filter);
 
@@ -221,13 +246,13 @@ public class Combined extends JFrame
 				if (validFile == JFileChooser.APPROVE_OPTION)
 				{
 					_currentPath = fc.getCurrentDirectory().toString() + "\\";
-					_authenticatorFile = fc.getSelectedFile();
-					tb_authFilename.setText(_authenticatorFile.getName());
+					_challengeFile = fc.getSelectedFile();
+					tb_chalFilename.setText(_challengeFile.getName());
 				}
 			}
 		});
-		btn_chooseAuthFile.setBounds(340, 10, 89, 23);
-		panel_proverPane.add(btn_chooseAuthFile);
+		btn_chooseChalFile.setBounds(340, 10, 89, 23);
+		panel_proverPane.add(btn_chooseChalFile);
 
 		JLabel lblNewLabel = new JLabel("Sigma:");
 		lblNewLabel.setBounds(32, 87, 89, 14);
@@ -237,34 +262,45 @@ public class Combined extends JFrame
 		lblMu.setBounds(32, 112, 89, 14);
 		panel_proverPane.add(lblMu);
 
-		textField = new JTextField();
-		textField.setEditable(false);
-		textField.setBounds(131, 84, 131, 20);
-		panel_proverPane.add(textField);
-		textField.setColumns(10);
+		tb_sigma = new JTextField();
+		tb_sigma.setEditable(false);
+		tb_sigma.setBounds(131, 84, 131, 20);
+		panel_proverPane.add(tb_sigma);
+		tb_sigma.setColumns(10);
 
-		textField_1 = new JTextField();
-		textField_1.setEditable(false);
-		textField_1.setColumns(10);
-		textField_1.setBounds(131, 109, 131, 20);
-		panel_proverPane.add(textField_1);
+		tb_mu = new JTextField();
+		tb_mu.setEditable(false);
+		tb_mu.setColumns(10);
+		tb_mu.setBounds(131, 109, 131, 20);
+		panel_proverPane.add(tb_mu);
 
-		JButton btnNewButton = new JButton("Prove!");
-		btnNewButton.addActionListener(new ActionListener()
+		JButton btn_prove = new JButton("Prove!");
+		btn_prove.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e)
 			{
+				// Get list of authenticators (1 of 3)
+				List<Long> authenticators = retrieveAuthenticatorsFromDisk(_inputFile.getName());
+				
+				/*System.out.println("Authenticators:");
+				for (Long l : authenticators)
+					System.out.println(l);*/
+				
 				// Retrieve all the file slices corresponding to the authentication file
-				List<File> listOfSlices = retrieveFileSlices(FilenameUtils.removeExtension(_authenticatorFile.getName()));
+				List<File> listOfSlices = retrieveFileSlices(FilenameUtils.removeExtension(_challengeFile.getName()));
+
+				/*System.out.println("Files:");
+				for (File f : listOfSlices)
+					System.out.println(f.getName());*/
 				
-				// Convert file slices to byte arrays
+				// Convert file slices to byte arrays (2 of 3)
 				List<byte[]> sliceBytes = new ArrayList<byte[]>();
-				
+
 				for (File f : listOfSlices)
 				{
 					FileInputStream fis = null;
 					byte[] bytes = new byte[(int) f.length()];
-					
+
 					try
 					{
 						fis = new FileInputStream(f);
@@ -277,19 +313,129 @@ public class Combined extends JFrame
 					sliceBytes.add(bytes);
 				}
 				
-				// TODO: Perform the calculation of sigma and mu
+				List<Integer> Q = retrieveChallengeFromFile(_inputFile.getName());
+
+				// Perform the calculation of sigma and mu
 				
-				// TODO: Save sigma and mu to disk for the verifier to use
+				List<Long> response = new ArrayList<Long>();
+				try
+				{
+					// Calculate sigma as part of the response to be sent back to the verifier
+					long sigma = 0;
+
+					for (int i = 0; i < authenticators.size(); i++)
+						sigma += Q.get(i) * authenticators.get(i);
+
+					/* ///////////////////////////////////////////////////////////////////////////// */
+
+					// Calculate mu as part of the response to be sent back to the verifier
+					long mu = 0;
+
+					for (int i = 0; i < Q.size(); i++)
+					{
+						byte[] ba = sliceBytes.get(i);
+						int coefficient = Q.get(i);
+						for (byte b : ba)
+							mu += coefficient * b;
+					}
+
+					response.add(sigma);
+					response.add(mu);
+					tb_sigma.setText(String.valueOf(sigma));
+					tb_mu.setText(String.valueOf(mu));
+
+				} catch (Exception ex)
+				{
+					ex.printStackTrace();
+				}
+
+				// Save sigma and mu to disk for the verifier to use
+				saveResponseToDisk(response);
 			}
 		});
-		btnNewButton.setBounds(302, 87, 89, 39);
-		panel_proverPane.add(btnNewButton);
+		btn_prove.setBounds(302, 87, 89, 39);
+		panel_proverPane.add(btn_prove);
 
 		JPanel panel_verifierPane = new JPanel();
 		tabbedPane.addTab("Verifier", null, panel_verifierPane, null);
 		panel_verifierPane.setLayout(null);
+		
+		tb_respFilename = new JTextField();
+		tb_respFilename.setEditable(false);
+		tb_respFilename.setBounds(10, 11, 320, 20);
+		panel_verifierPane.add(tb_respFilename);
+		tb_respFilename.setColumns(10);
+		
+		JButton btn_chooseRespFile = new JButton("Choose");
+		btn_chooseRespFile.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent arg0)
+			{
+				JFileChooser fc = new JFileChooser("C:\\Sample Files");
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Response File", "resp");
+				fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				fc.setFileFilter(filter);
+
+				int validFile = fc.showOpenDialog(panel_contentPane);
+				if (validFile == JFileChooser.APPROVE_OPTION)
+				{
+					_currentPath = fc.getCurrentDirectory().toString() + "\\";
+					_responseFile = fc.getSelectedFile();
+					tb_respFilename.setText(_responseFile.getName());
+				}
+			}
+		});
+		btn_chooseRespFile.setBounds(340, 10, 89, 23);
+		panel_verifierPane.add(btn_chooseRespFile);
+		
+		JButton btnVerify = new JButton("Verify");
+		btnVerify.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				List<Long> response = retrieveResponseFromDisk(FilenameUtils.removeExtension(_responseFile.getName()));
+				
+			}
+		});
+		btnVerify.setBounds(328, 97, 89, 45);
+		panel_verifierPane.add(btnVerify);
+		
+		tb_fileSigma = new JTextField();
+		tb_fileSigma.setEditable(false);
+		tb_fileSigma.setBounds(166, 81, 127, 20);
+		panel_verifierPane.add(tb_fileSigma);
+		tb_fileSigma.setColumns(10);
+		
+		JLabel lbl_fileSigma = new JLabel("Sigma:");
+		lbl_fileSigma.setBounds(32, 81, 82, 14);
+		panel_verifierPane.add(lbl_fileSigma);
+		
+		JLabel lbl_fileMu = new JLabel("Mu:");
+		lbl_fileMu.setBounds(32, 112, 82, 14);
+		panel_verifierPane.add(lbl_fileMu);
+		
+		tb_fileMu = new JTextField();
+		tb_fileMu.setEditable(false);
+		tb_fileMu.setColumns(10);
+		tb_fileMu.setBounds(166, 112, 127, 20);
+		panel_verifierPane.add(tb_fileMu);
+		
+		JLabel lbl_calcSigma = new JLabel("Calculated Sigma:");
+		lbl_calcSigma.setBounds(32, 144, 124, 14);
+		panel_verifierPane.add(lbl_calcSigma);
+		
+		textField = new JTextField();
+		textField.setEditable(false);
+		textField.setColumns(10);
+		textField.setBounds(166, 144, 127, 20);
+		panel_verifierPane.add(textField);
 	}
-	
+
+	// ///////// SPLITTER
+	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// ///////// SPLITTER
+	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	private List<InputStream> getErasureEncodedFileSlices(File inFile)
 	{
 		// int rowSize = 15; // Total number of blocks
@@ -359,7 +505,7 @@ public class Combined extends JFrame
 		return lsSegmentedWithId;
 		// return lsSegmented;
 	}
-	
+
 	/**
 	 * Takes a list of InputStreams and convert them into byte arrays, as the Input Streams clear after they are read
 	 * @param listOfInputStreams
@@ -389,6 +535,7 @@ public class Combined extends JFrame
 		return listOfByteArrays;
 	}
 	
+
 	/**
 	 * Generates a large prime using a couple of SecureRandom instances
 	 * @return Returns a large prime p
@@ -431,6 +578,7 @@ public class Combined extends JFrame
 
 		return largestPrime;
 	}
+	
 
 	/**
 	 * Generates a secure random value between 0 and bound
@@ -458,6 +606,7 @@ public class Combined extends JFrame
 
 		return result;
 	}
+	
 
 	/**
 	 * Generates a random integer to be used as PRF key k
@@ -469,6 +618,7 @@ public class Combined extends JFrame
 		return (int) (rand.nextDouble() * 10000);
 	}
 	
+
 	/**
 	 * Saves the individual file slices to disk
 	 * @param loba The list of byte arrays to be saved
@@ -482,11 +632,11 @@ public class Combined extends JFrame
 			{
 				ByteArrayInputStream bais = new ByteArrayInputStream(ba);
 				FileOutputStream outputFile = new FileOutputStream(_currentPath + tb_filename.getText() + ".s" + counter++);
-				
+
 				int d;
 				while ((d = bais.read()) != -1)
 					outputFile.write(d);
-				
+
 				outputFile.close();
 			}
 		} catch (Exception ex)
@@ -495,6 +645,7 @@ public class Combined extends JFrame
 		}
 	}
 	
+
 	/**
 	 * Calculates the authentication value for a given block of the input file
 	 * @param ba A byte array block of the erasure encoded file
@@ -518,6 +669,7 @@ public class Combined extends JFrame
 		return authenticator;
 	}
 	
+
 	/**
 	 * Save the authenticators to a comma delimited file
 	 * @param listOfAuthenticators
@@ -529,9 +681,9 @@ public class Combined extends JFrame
 			PrintWriter writer = new PrintWriter(_currentPath + tb_filename.getText() + ".auth", "UTF-8");
 			for (int i = 0; i < listOfAuthenticators.size(); i++)
 			{
-				if (listOfAuthenticators.get(i) != listOfAuthenticators.get(listOfAuthenticators.size() -1))
+				if (listOfAuthenticators.get(i) != listOfAuthenticators.get(listOfAuthenticators.size() - 1))
 					writer.print(listOfAuthenticators.get(i) + ",");
-				else if (listOfAuthenticators.get(i) == listOfAuthenticators.get(listOfAuthenticators.size() -1))
+				else if (listOfAuthenticators.get(i) == listOfAuthenticators.get(listOfAuthenticators.size() - 1))
 					writer.print(listOfAuthenticators.get(i));
 			}
 			writer.close();
@@ -541,6 +693,34 @@ public class Combined extends JFrame
 		}
 	}
 	
+
+	/**
+	 * Save the coefficients to a comma delimited file
+	 * @param Q The list of coefficients
+	 */
+	private void saveChallengeToDisk(List<Integer> Q)
+	{
+		try
+		{
+			PrintWriter writer = new PrintWriter(_currentPath + tb_filename.getText() + ".chal", "UTF-8");
+			for (int i = 0; i < Q.size(); i++)
+			{
+				if (Q.get(i) != Q.get(Q.size() - 1))
+					writer.print(Q.get(i) + ",");
+				else if (Q.get(i) == Q.get(Q.size() - 1))
+					writer.print(Q.get(i));
+			}
+			writer.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+
+	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// ///////// PROVER
+	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	/**
 	 * Retrieves the file slices corresponding to the authenticator selected
 	 * @param filename The name of the file to be retrieved
@@ -553,15 +733,105 @@ public class Combined extends JFrame
 		while (true)
 		{
 			File f = new File(_currentPath + filename + ".s" + counter);
-			if(f.exists() && !f.isDirectory())
+			if (f.exists() && !f.isDirectory())
 			{
 				listOfSlices.add(f);
 				counter++;
-			}
-			else
+			} else
 				break;
 		}
-		
+
 		return listOfSlices;
+	}
+
+	/**
+	 * Retrieves the authentication values from a file on disk
+	 * @param filename The name of the file to be retrieved
+	 * @return Returns a list of authenticators
+	 */
+	private List<Long> retrieveAuthenticatorsFromDisk(String filename)
+	{
+		List<Long> listOfAuthenticators = new ArrayList<Long>();
+		try
+		{
+			BufferedReader br = new BufferedReader(new FileReader(_currentPath + filename + ".auth"));
+			String line = null;
+
+			while ((line = br.readLine()) != null)
+			{
+				String[] values = line.split(",");
+				for (String str : values)
+					listOfAuthenticators.add(Long.parseLong(str, 10));
+			}
+			br.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		return listOfAuthenticators;
+	}
+
+	
+	private List<Integer> retrieveChallengeFromFile(String filename)
+	{
+		List<Integer> listOfCoeffients = new ArrayList<Integer>();
+		try
+		{
+			BufferedReader br = new BufferedReader(new FileReader(_currentPath + filename + ".chal"));
+			String line = null;
+
+			while ((line = br.readLine()) != null)
+			{
+				String[] values = line.split(",");
+				for (String str : values)
+					listOfCoeffients.add(Integer.parseInt(str, 10));
+			}
+			br.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		return listOfCoeffients;
+	}
+	
+	private void saveResponseToDisk(List<Long> response)
+	{
+		try
+		{
+			PrintWriter writer = new PrintWriter(_currentPath + tb_filename.getText() + ".resp", "UTF-8");
+			for (int i = 0; i < response.size(); i++)
+			{
+				if (response.get(i) != response.get(response.size() - 1))
+					writer.print(response.get(i) + ",");
+				else if (response.get(i) == response.get(response.size() - 1))
+					writer.print(response.get(i));
+			}
+			writer.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
+	private List<Long> retrieveResponseFromDisk(String filename)
+	{
+		List<Long> response = new ArrayList<Long>();
+		try
+		{
+			BufferedReader br = new BufferedReader(new FileReader(_currentPath + filename + ".resp"));
+			String line = null;
+
+			while ((line = br.readLine()) != null)
+			{
+				String[] values = line.split(",");
+				for (String str : values)
+					response.add(Long.parseLong(str, 10));
+			}
+			br.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		return response;
 	}
 }
