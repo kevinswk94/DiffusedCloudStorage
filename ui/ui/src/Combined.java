@@ -254,13 +254,10 @@ public class Combined extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				// TODO: Retrieve all the file slices corresponding to the authentication file
-				
-				//System.out.println(FilenameUtils.removeExtension(_authenticatorFile.getName()));;
+				// Retrieve all the file slices corresponding to the authentication file
 				List<File> listOfSlices = retrieveFileSlices(FilenameUtils.removeExtension(_authenticatorFile.getName()));
 				
-				// TODO: Convert file slices to byte arrays
-				
+				// Convert file slices to byte arrays
 				List<byte[]> sliceBytes = new ArrayList<byte[]>();
 				
 				for (File f : listOfSlices)
