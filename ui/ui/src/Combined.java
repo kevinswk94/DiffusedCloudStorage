@@ -64,7 +64,6 @@ public class Combined extends JFrame
 	private JTextField tb_mu;
 	private JTextField tb_respFilename;
 	private JTextField tb_fileSigma;
-	private JTextField tb_fileMu;
 	private JTextField tb_calcSigma;
 	private JTextField tb_status;
 
@@ -405,7 +404,6 @@ public class Combined extends JFrame
 
 				// Display sigma, mu and the calcuated sigma on the program
 				tb_fileSigma.setText(String.valueOf(sigma));
-				tb_fileMu.setText(String.valueOf(mu));
 				tb_calcSigma.setText(String.valueOf(verifySigma));
 				
 				// Compare the two sigmas and display the respective message
@@ -420,36 +418,26 @@ public class Combined extends JFrame
 		
 		tb_fileSigma = new JTextField();
 		tb_fileSigma.setEditable(false);
-		tb_fileSigma.setBounds(166, 65, 127, 20);
+		tb_fileSigma.setBounds(166, 72, 127, 20);
 		panel_verifierPane.add(tb_fileSigma);
 		tb_fileSigma.setColumns(10);
 		
 		JLabel lbl_fileSigma = new JLabel("Sigma:");
-		lbl_fileSigma.setBounds(32, 65, 82, 14);
+		lbl_fileSigma.setBounds(32, 72, 82, 14);
 		panel_verifierPane.add(lbl_fileSigma);
 		
-		JLabel lbl_fileMu = new JLabel("Mu:");
-		lbl_fileMu.setBounds(32, 96, 82, 14);
-		panel_verifierPane.add(lbl_fileMu);
-		
-		tb_fileMu = new JTextField();
-		tb_fileMu.setEditable(false);
-		tb_fileMu.setColumns(10);
-		tb_fileMu.setBounds(166, 96, 127, 20);
-		panel_verifierPane.add(tb_fileMu);
-		
 		JLabel lbl_calcSigma = new JLabel("Calculated Sigma:");
-		lbl_calcSigma.setBounds(32, 128, 124, 14);
+		lbl_calcSigma.setBounds(32, 108, 124, 14);
 		panel_verifierPane.add(lbl_calcSigma);
 		
 		tb_calcSigma = new JTextField();
 		tb_calcSigma.setEditable(false);
 		tb_calcSigma.setColumns(10);
-		tb_calcSigma.setBounds(166, 128, 127, 20);
+		tb_calcSigma.setBounds(166, 108, 127, 20);
 		panel_verifierPane.add(tb_calcSigma);
 		
 		JLabel lbl_status = new JLabel("Status:");
-		lbl_status.setBounds(32, 162, 82, 14);
+		lbl_status.setBounds(32, 142, 82, 14);
 		panel_verifierPane.add(lbl_status);
 		
 		tb_status = new JTextField();
@@ -457,7 +445,7 @@ public class Combined extends JFrame
 		tb_status.setForeground(Color.RED);
 		tb_status.setEditable(false);
 		tb_status.setColumns(10);
-		tb_status.setBounds(166, 162, 127, 20);
+		tb_status.setBounds(166, 142, 127, 20);
 		panel_verifierPane.add(tb_status);
 	}
 
