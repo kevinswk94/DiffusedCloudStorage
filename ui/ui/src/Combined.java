@@ -285,16 +285,8 @@ public class Combined extends JFrame
 				// Get list of authenticators (1 of 3)
 				List<Long> authenticators = retrieveAuthenticatorsFromDisk(_inputFile.getName());
 				
-				/*System.out.println("Authenticators:");
-				for (Long l : authenticators)
-					System.out.println(l);*/
-				
 				// Retrieve all the file slices corresponding to the authentication file
 				List<File> listOfSlices = retrieveFileSlices(FilenameUtils.removeExtension(_challengeFile.getName()));
-
-				/*System.out.println("Files:");
-				for (File f : listOfSlices)
-					System.out.println(f.getName());*/
 				
 				// Convert file slices to byte arrays (2 of 3)
 				List<byte[]> sliceBytes = new ArrayList<byte[]>();
@@ -316,22 +308,20 @@ public class Combined extends JFrame
 					sliceBytes.add(bytes);
 				}
 				
+				// Retrieve the challenge coefficients from disk (3 of 3)
 				List<Integer> Q = retrieveChallengeFromFile(_inputFile.getName());
 
 				// Perform the calculation of sigma and mu
-				
 				List<Long> response = new ArrayList<Long>();
 				try
 				{
-					// Calculate sigma as part of the response to be sent back to the verifier
+					// Calculating sigma
 					long sigma = 0;
 
 					for (int i = 0; i < authenticators.size(); i++)
 						sigma += Q.get(i) * authenticators.get(i);
 
-					/* ///////////////////////////////////////////////////////////////////////////// */
-
-					// Calculate mu as part of the response to be sent back to the verifier
+					// Calculating mu
 					long mu = 0;
 
 					for (int i = 0; i < Q.size(); i++)
@@ -341,9 +331,12 @@ public class Combined extends JFrame
 						for (byte b : ba)
 							mu += coefficient * b;
 					}
-
+					
+					// Add sigma and mu to the response
 					response.add(sigma);
 					response.add(mu);
+					
+					// Display sigma and mu on the program
 					tb_sigma.setText(String.valueOf(sigma));
 					tb_mu.setText(String.valueOf(mu));
 
@@ -352,7 +345,7 @@ public class Combined extends JFrame
 					ex.printStackTrace();
 				}
 
-				// Save sigma and mu to disk for the verifier to use
+				// Save the response to disk
 				saveResponseToDisk(response);
 			}
 		});
@@ -396,9 +389,11 @@ public class Combined extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
+				// Retrieve the response and Q from disk
 				List<Long> response = retrieveResponseFromDisk(FilenameUtils.removeExtension(_responseFile.getName()));
 				List<Integer> Q = retrieveChallengeFromFile(_inputFile.getName());
 				
+				// Calculate sigma to compare against the response
 				long sigma = response.get(0);
 				long mu = response.get(1);
 				long keyXCoefficient = 0;
@@ -408,10 +403,12 @@ public class Combined extends JFrame
 
 				long verifySigma = _alpha * mu + keyXCoefficient;
 
+				// Display sigma, mu and the calcuated sigma on the program
 				tb_fileSigma.setText(String.valueOf(sigma));
 				tb_fileMu.setText(String.valueOf(mu));
 				tb_calcSigma.setText(String.valueOf(verifySigma));
 				
+				// Compare the two sigmas and display the respective message
 				if (sigma == verifySigma)
 					tb_status.setText("Verified!");
 				else
@@ -803,7 +800,11 @@ public class Combined extends JFrame
 		return listOfAuthenticators;
 	}
 
-	
+	/**
+	 * Retrieves the verifier's challenge from disk
+	 * @param filename The name of the challenge file
+	 * @return Returns a list containing the verifier's challenge (list of coefficients)
+	 */
 	private List<Integer> retrieveChallengeFromFile(String filename)
 	{
 		List<Integer> listOfCoeffients = new ArrayList<Integer>();
@@ -826,6 +827,10 @@ public class Combined extends JFrame
 		return listOfCoeffients;
 	}
 	
+	/**
+	 * Saves the prover's response to disk
+	 * @param response The generated prover's response (sigma & mu)
+	 */
 	private void saveResponseToDisk(List<Long> response)
 	{
 		try
@@ -845,6 +850,15 @@ public class Combined extends JFrame
 		}
 	}
 	
+	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// ///////// VERIFIER
+	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	/**
+	 * Retrieves the prover's response from disk
+	 * @param filename The name of the response file
+	 * @return A list containing the prover's response (sigma & mu)
+	 */
 	private List<Long> retrieveResponseFromDisk(String filename)
 	{
 		List<Long> response = new ArrayList<Long>();
