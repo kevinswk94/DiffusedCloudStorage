@@ -43,7 +43,7 @@ import org.apache.commons.io.FilenameUtils;
 import java.awt.Color;
 import java.awt.Font;
 
-public class Combined extends JFrame
+public class Split extends JFrame
 {
 	private File _inputFile; // The input file to be split
 	private File _challengeFile; // The input challenge file
@@ -78,7 +78,7 @@ public class Combined extends JFrame
 			{
 				try
 				{
-					Combined frame = new Combined();
+					Split frame = new Split();
 					frame.setVisible(true);
 				} catch (Exception e)
 				{
@@ -91,7 +91,7 @@ public class Combined extends JFrame
 	/**
 	 * Create the frame.
 	 */
-	public Combined()
+	public Split()
 	{
 		setTitle("Proof of Retrievability");
 		setResizable(false);
