@@ -48,7 +48,7 @@ public class Split extends JFrame
 	private File _inputFile; // The input file to be split
 	private File _challengeFile; // The input challenge file
 	private File _responseFile; // The input response file
-	private String _currentPath; // The path of the directory the user is currently inv
+	private String _currentPath; // The path of the directory the user is currently in
 
 	private int _p; // large prime
 	private int _alpha; // random integer within large prime p
@@ -171,15 +171,21 @@ public class Split extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
+				// TODO: File is split into 5 blocks, and each block is split into s sectors
+				
+				// Create lists to store the alphas and authenticators
+				List<Integer> listOfAlphas = new ArrayList<Integer>();
+				
 				// Generates large prime _p, random int _alpha and PRF key _k
 				_p = generateLargePrime();
-				_alpha = generateSecureRandomInteger(_p);
 				_key = generatePRFKeyK();
+				
+				// _alpha = generateSecureRandomInteger(_p);
 
 				// Displays them on the GUI
 				tb_primeP.setText(String.valueOf(_p));
-				tb_alpha.setText(String.valueOf(_alpha));
 				tb_prfKey.setText(String.valueOf(_key));
+				// tb_alpha.setText(String.valueOf(_alpha));
 
 				// Erasure encodes the input file and returns a list of the InputStreams generated
 				// InputStreams will become empty after using it in a method
@@ -552,7 +558,19 @@ public class Split extends JFrame
 		return listOfByteArrays;
 	}
 	
-
+	private List<byte[]> splitSliceIntoSectors(byte[] ba)
+	{
+		List<byte[]> listOfSectors = new ArrayList<byte[]>();
+		
+		int sizeOfSector = 1024; // 1KB
+        byte[] buffer = new byte[sizeOfSector];
+        
+        // TODO: Divide slice into sectors
+        
+        
+        return listOfSectors;
+	}
+	
 	/**
 	 * Generates a large prime using a couple of SecureRandom instances
 	 * @return Returns a large prime p
@@ -595,7 +613,6 @@ public class Split extends JFrame
 
 		return largestPrime;
 	}
-	
 
 	/**
 	 * Generates a secure random value between 0 and bound
@@ -624,7 +641,6 @@ public class Split extends JFrame
 		return result;
 	}
 	
-
 	/**
 	 * Generates a random integer to be used as PRF key k
 	 * @return Returns generated integer, PRF key k
@@ -635,7 +651,6 @@ public class Split extends JFrame
 		return (int) (rand.nextDouble() * 10000);
 	}
 	
-
 	/**
 	 * Saves the individual file slices to disk
 	 * @param loba The list of byte arrays to be saved
@@ -662,7 +677,6 @@ public class Split extends JFrame
 		}
 	}
 	
-
 	/**
 	 * Calculates the authentication value for a given block of the input file
 	 * @param ba A byte array block of the erasure encoded file
@@ -684,8 +698,7 @@ public class Split extends JFrame
 
 		authenticator = _key + blockXAlpha;
 		return authenticator;
-	}
-	
+	}	
 
 	/**
 	 * Save the authenticators to a comma delimited file
@@ -709,7 +722,6 @@ public class Split extends JFrame
 			ex.printStackTrace();
 		}
 	}
-	
 
 	/**
 	 * Save the coefficients to a comma delimited file
