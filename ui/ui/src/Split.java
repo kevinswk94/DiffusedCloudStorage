@@ -52,6 +52,7 @@ public class Split extends JFrame
 
 	private int _p; // large prime
 	private int _alpha; // random integer within large prime p
+	private List<Integer> _alphas = new ArrayList<Integer>();
 	private int _key; // random integer generated using a PRF
 
 	private JPanel panel_contentPane;
@@ -171,10 +172,7 @@ public class Split extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				// TODO: File is split into n blocks, and each block is split into s sectors
-				// Let n = 5 and s = number of sectors to fit all the data
-				
-				// Create lists to store the alphas and authenticators
+				// Create lists to store the alphas
 				List<Integer> listOfAlphas = new ArrayList<Integer>();
 				
 				// Generates large prime _p, random int _alpha and PRF key _k
@@ -193,14 +191,24 @@ public class Split extends JFrame
 
 				// Convert the InputStreams into Byte Arrays
 				List<byte[]> encodedSliceBytes = convertInputStreamToByteArray(encodedSlices);
+				
+				List<byte[]> blockSectors = splitSliceIntoSectors(encodedSliceBytes.get(0));
+				
+				for (int i = 1; i <= blockSectors.size(); i++)
+					_alphas.add(generateSecureRandomInteger(255));
+				
+				List<Long> listOfAuthenticators = new ArrayList<Long>();
+				
+				// Generate list of authenticators using byte arrays
+				for (byte[] baa : encodedSliceBytes)
+					listOfAuthenticators.add(calculateAuthenticationValue(baa));
 
 				// Save file slices to disk
 				saveFileSlicesToDisk(encodedSliceBytes);
-
-				// Generate list of authenticators using byte arrays
-				List<Long> listOfAuthenticators = new ArrayList<Long>();
+				
+				/*List<Long> listOfAuthenticators = new ArrayList<Long>();
 				for (byte[] ba : encodedSliceBytes)
-					listOfAuthenticators.add(calculateAuthenticationValue(ba));
+					listOfAuthenticators.add(calculateAuthenticationValue(ba));*/
 
 				// Save authenticators to disk
 				saveAuthenticatorsToDisk(listOfAuthenticators);
@@ -326,24 +334,37 @@ public class Split extends JFrame
 					for (int i = 0; i < authenticators.size(); i++)
 						sigma += Q.get(i) * authenticators.get(i);
 
-					// Calculating mu
-					long mu = 0;
-
-					for (int i = 0; i < Q.size(); i++)
+					// Add sigma to the response
+					response.add(sigma);
+					
+					// Calculating mus
+					
+					for (int i = 0; i < sliceBytes.size(); i++)
+					{
+						long mu = 0;
+						List<byte[]> sectors = splitSliceIntoSectors(sliceBytes.get(i));
+						int coefficient = Q.get(i);
+						for (byte[] ba : sectors)
+						{
+							for (byte b : ba)
+								mu += coefficient * b;
+						}
+						
+						// Add mus to the response
+						response.add(mu);
+					}
+					
+					/*for (int i = 0; i < Q.size(); i++)
 					{
 						byte[] ba = sliceBytes.get(i);
 						int coefficient = Q.get(i);
 						for (byte b : ba)
 							mu += coefficient * b;
-					}
-					
-					// Add sigma and mu to the response
-					response.add(sigma);
-					response.add(mu);
+					}*/
 					
 					// Display sigma and mu on the program
 					tb_sigma.setText(String.valueOf(sigma));
-					tb_mu.setText(String.valueOf(mu));
+					//tb_mu.setText(String.valueOf(mu));
 
 				} catch (Exception ex)
 				{
@@ -558,15 +579,39 @@ public class Split extends JFrame
 		return listOfByteArrays;
 	}
 	
+	/**
+	 * Splits a slice into sectors of a fixed size (1KB)
+	 * @param ba The input byte array to be split
+	 * @return Returns a list of sectors
+	 */
 	private List<byte[]> splitSliceIntoSectors(byte[] ba)
 	{
 		List<byte[]> listOfSectors = new ArrayList<byte[]>();
 		
+		int start = 0;
 		int sizeOfSector = 1024; // 1KB
-        byte[] buffer = new byte[sizeOfSector];
         
-        // TODO: Divide slice into sectors
+        // Divide slice into sectors
+        while (true)
+        {
+        	byte[] buffer = new byte[sizeOfSector];
+        	if (start + sizeOfSector > ba.length) // If the buffer is not full (last sector)
+        	{
+        		System.arraycopy(ba, start, buffer, 0, ba.length - start);
+        		listOfSectors.add(buffer);
+        		break;
+        	}
+        	else // If the buffer is full
+        	{
+        		System.arraycopy(ba, start, buffer, 0, sizeOfSector);
+        		listOfSectors.add(buffer);
+        		start += sizeOfSector;
+        	}
+        }
         
+        /*int ii = 0;
+        for (byte[] baa : listOfSectors)
+        	System.out.println("Sector " + ii++ + " size: " + baa.length);*/
         
         return listOfSectors;
 	}
@@ -678,19 +723,28 @@ public class Split extends JFrame
 	}
 	
 	/**
-	 * Calculates the authentication value for a given block of the input file
-	 * @param ba A byte array block of the erasure encoded file
+	 * Calculates the authentication value for a given slice of the file
+	 * @param ba A byte array slice of a file
 	 * @return Returns the generated authentication value
 	 */
 	private long calculateAuthenticationValue(byte[] ba)
 	{
+		List<byte[]> sectors = splitSliceIntoSectors(ba);
+		
 		long authenticator;
 		long blockXAlpha = 0;
-
+		
 		try
 		{
-			for (byte b : ba)
-				blockXAlpha += _alpha * b;
+			for (int i = 0; i < sectors.size(); i++)
+			{
+				byte[] baa = sectors.get(i);
+				int alpha = _alphas.get(i);
+				
+				for (byte b : baa)
+					blockXAlpha += alpha * b;
+			}
+			
 		} catch (Exception ex)
 		{
 			ex.printStackTrace();
