@@ -171,7 +171,8 @@ public class Split extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				// TODO: File is split into 5 blocks, and each block is split into s sectors
+				// TODO: File is split into n blocks, and each block is split into s sectors
+				// Let n = 5 and s = number of sectors to fit all the data
 				
 				// Create lists to store the alphas and authenticators
 				List<Integer> listOfAlphas = new ArrayList<Integer>();
@@ -179,7 +180,6 @@ public class Split extends JFrame
 				// Generates large prime _p, random int _alpha and PRF key _k
 				_p = generateLargePrime();
 				_key = generatePRFKeyK();
-				
 				// _alpha = generateSecureRandomInteger(_p);
 
 				// Displays them on the GUI
