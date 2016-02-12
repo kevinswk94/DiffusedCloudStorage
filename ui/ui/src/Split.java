@@ -172,9 +172,6 @@ public class Split extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				// Create lists to store the alphas
-				List<Integer> listOfAlphas = new ArrayList<Integer>();
-				
 				// Generates large prime _p, random int _alpha and PRF key _k
 				_p = generateLargePrime();
 				_key = generatePRFKeyK();
@@ -195,7 +192,7 @@ public class Split extends JFrame
 				List<byte[]> blockSectors = splitSliceIntoSectors(encodedSliceBytes.get(0));
 				
 				for (int i = 1; i <= blockSectors.size(); i++)
-					_alphas.add(generateSecureRandomInteger(255));
+					_alphas.add(generateSecureRandomInteger(_p));
 				
 				List<Long> listOfAuthenticators = new ArrayList<Long>();
 				
@@ -205,10 +202,6 @@ public class Split extends JFrame
 
 				// Save file slices to disk
 				saveFileSlicesToDisk(encodedSliceBytes);
-				
-				/*List<Long> listOfAuthenticators = new ArrayList<Long>();
-				for (byte[] ba : encodedSliceBytes)
-					listOfAuthenticators.add(calculateAuthenticationValue(ba));*/
 
 				// Save authenticators to disk
 				saveAuthenticatorsToDisk(listOfAuthenticators);
@@ -302,7 +295,7 @@ public class Split extends JFrame
 				List<File> listOfSlices = retrieveFileSlices(FilenameUtils.removeExtension(_challengeFile.getName()));
 				
 				// Convert file slices to byte arrays (2 of 3)
-				List<byte[]> sliceBytes = new ArrayList<byte[]>();
+				List<byte[]> listOfSliceBytes = new ArrayList<byte[]>();
 
 				for (File f : listOfSlices)
 				{
@@ -318,7 +311,7 @@ public class Split extends JFrame
 					{
 						ex.printStackTrace();
 					}
-					sliceBytes.add(bytes);
+					listOfSliceBytes.add(bytes);
 				}
 				
 				// Retrieve the challenge coefficients from disk (3 of 3)
@@ -338,28 +331,22 @@ public class Split extends JFrame
 					response.add(sigma);
 					
 					// Calculating mus
-					for (int i = 0; i < sliceBytes.size(); i++)
+					for (int i = 0; i < _alphas.size(); i++)
 					{
 						long mu = 0;
-						List<byte[]> sectors = splitSliceIntoSectors(sliceBytes.get(i));
-						int coefficient = Q.get(i);
-						for (byte[] ba : sectors)
+						for (int j = 0; j < Q.size(); j++)
 						{
-							for (byte b : ba)
-								mu += coefficient * b;
+							List<byte[]> sectors = splitSliceIntoSectors(listOfSliceBytes.get(j));
+							int coefficient = Q.get(j);
+							for (byte[] ba : sectors)
+							{
+								for (byte b : ba)
+									mu += coefficient * b;
+							}
 						}
-						
-						// Add mus to the response
+						// Add mu to the response
 						response.add(mu);
 					}
-					
-					/*for (int i = 0; i < Q.size(); i++)
-					{
-						byte[] ba = sliceBytes.get(i);
-						int coefficient = Q.get(i);
-						for (byte b : ba)
-							mu += coefficient * b;
-					}*/
 					
 					// Display sigma and mu on the program
 					tb_sigma.setText(String.valueOf(sigma));
@@ -416,17 +403,30 @@ public class Split extends JFrame
 			{
 				// Retrieve the response and Q from disk
 				List<Long> response = retrieveResponseFromDisk(FilenameUtils.removeExtension(_responseFile.getName()));
+				//System.out.println("Response size: " + response.size());
+				
 				List<Integer> Q = retrieveChallengeFromFile(_inputFile.getName());
 				
-				// Calculate sigma to compare against the response
+				// Retrieve sigma from file
 				long sigma = response.get(0);
-				long mu = response.get(1);
+				
+				// Retrieve mus from file
+				List<Long> listOfMus = new ArrayList<Long>();
+				for (int i = 1; i < response.size(); i++)
+					listOfMus.add(response.get(i));
+				//System.out.println("listOfMus size: " + listOfMus.size());
+				
+				// Calculate summation of coefficients x key
 				long keyXCoefficient = 0;
-
 				for (int i : Q)
 					keyXCoefficient += _key * i;
-
-				long verifySigma = _alpha * mu + keyXCoefficient;
+				
+				// Calculate summation of alphas x mus
+				long alphasXMus = 0;
+				for (int i = 0; i < _alphas.size(); i++)
+					alphasXMus += listOfMus.get(i) * _alphas.get(i);
+				
+				long verifySigma = keyXCoefficient + alphasXMus;
 
 				// Display sigma, mu and the calcuated sigma on the program
 				tb_fileSigma.setText(String.valueOf(sigma));
@@ -730,18 +730,20 @@ public class Split extends JFrame
 	{
 		List<byte[]> sectors = splitSliceIntoSectors(ba);
 		
-		long authenticator;
-		long blockXAlpha = 0;
+		long summation = 0;
 		
 		try
 		{
 			for (int i = 0; i < sectors.size(); i++)
 			{
+				long sectorXAlpha = 0;
 				byte[] baa = sectors.get(i);
 				int alpha = _alphas.get(i);
 				
 				for (byte b : baa)
-					blockXAlpha += alpha * b;
+					sectorXAlpha += alpha * b;
+				
+				summation += sectorXAlpha;
 			}
 			
 		} catch (Exception ex)
@@ -749,7 +751,7 @@ public class Split extends JFrame
 			ex.printStackTrace();
 		}
 
-		authenticator = _key + blockXAlpha;
+		long authenticator = _key + summation;
 		return authenticator;
 	}	
 
