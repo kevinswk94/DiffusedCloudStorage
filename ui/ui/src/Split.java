@@ -338,7 +338,6 @@ public class Split extends JFrame
 					response.add(sigma);
 					
 					// Calculating mus
-					
 					for (int i = 0; i < sliceBytes.size(); i++)
 					{
 						long mu = 0;
