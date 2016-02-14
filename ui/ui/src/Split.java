@@ -330,24 +330,21 @@ public class Split extends JFrame
 					// Add sigma to the response
 					response.add(sigma);
 					
-					// TODO: Calculating mus ISSUE: All the mus generated are the same
+					// Calculating mus
 					for (int i = 0; i < _noOfSectors; i++)
 					{
 						BigInteger mu = BigInteger.valueOf(0);
 						for (int j = 0; j < Q.size(); j++)
 						{
-							List<byte[]> sectors = splitSliceIntoSectors(listOfSliceBytes.get(j));
 							int coefficient = Q.get(j);
-							for (byte[] ba : sectors)
+							byte[] ba = splitSliceIntoSectors(listOfSliceBytes.get(j)).get(i);
+							for (byte b : ba)
 							{
-								for (byte b : ba)
-								{
-									//mu += coefficient * b;
-									
-									BigInteger co = BigInteger.valueOf(coefficient);
-									co = co.multiply(BigInteger.valueOf(b));
-									mu = mu.add(co);
-								}
+								//mu += coefficient * b;
+								
+								BigInteger co = BigInteger.valueOf(coefficient);
+								co = co.multiply(BigInteger.valueOf(b));
+								mu = mu.add(co);
 							}
 						}
 						// Add mu to the response
@@ -733,13 +730,11 @@ public class Split extends JFrame
 	{
 		List<BigInteger> listOfAuthenticators = new ArrayList<BigInteger>();
 		_noOfSectors = splitSliceIntoSectors(listOfEncodedSliceBytes.get(0)).size();
-		System.out.println("Number of sectors: " + _noOfSectors);
 		
 		// Clear the list of alphas before adding
 		_alphas.clear();
 		for (int i = 0; i < _noOfSectors; i++)
 			_alphas.add(generateSecureRandomInteger(_p));
-		System.out.println("_alphas size: " + _alphas.size());
 		
 		for (int i = 0; i < listOfEncodedSliceBytes.size(); i++)
 		{
