@@ -185,17 +185,19 @@ public class Split extends JFrame
 				// tb_alpha.setText(String.valueOf(_alpha));
 
 				// Get erasure encoded byte arrays from input file
-				List<byte[]> encodedSliceBytes = getErasureEncodedFileSlices(_inputFile);
+				List<byte[]> listOfEncodedSliceBytes = getErasureEncodedFileSlices(_inputFile);
 				
-				/*List<byte[]> blockSectors = splitSliceIntoSectors(encodedSliceBytes.get(0));
-				_noOfSectors = blockSectors.size();
-				System.out.println("_noOfSectors size: " + _noOfSectors);
-				blockSectors.clear();*/
+				_noOfSectors = splitSliceIntoSectors(listOfEncodedSliceBytes.get(0)).size();
 				
-				List<BigInteger> listOfAuthenticators = calculateAuthenticationValues(encodedSliceBytes);
+				// Clear the list of alphas before adding
+				_alphas.clear();
+				for (int i = 0; i < _noOfSectors; i++)
+					_alphas.add(generateSecureRandomInteger(_p));
+				
+				List<BigInteger> listOfAuthenticators = calculateAuthenticationValues(listOfEncodedSliceBytes);
 
 				// Save file slices to disk
-				saveFileSlicesToDisk(encodedSliceBytes);
+				saveFileSlicesToDisk(listOfEncodedSliceBytes);
 
 				// Save authenticators to disk
 				saveAuthenticatorsToDisk(listOfAuthenticators);
@@ -320,8 +322,6 @@ public class Split extends JFrame
 
 					for (int i = 0; i < authenticators.size(); i++)
 					{
-						//sigma += Q.get(i) * authenticators.get(i);
-						
 						BigInteger coefficient = BigInteger.valueOf(Q.get(i));
 						coefficient = coefficient.multiply(authenticators.get(i));
 						sigma = sigma.add(coefficient);
@@ -340,8 +340,6 @@ public class Split extends JFrame
 							byte[] ba = splitSliceIntoSectors(listOfSliceBytes.get(j)).get(i);
 							for (byte b : ba)
 							{
-								//mu += coefficient * b;
-								
 								BigInteger co = BigInteger.valueOf(coefficient);
 								co = co.multiply(BigInteger.valueOf(b));
 								mu = mu.add(co);
@@ -406,8 +404,6 @@ public class Split extends JFrame
 			{
 				// Retrieve the response and Q from disk
 				List<BigInteger> response = retrieveResponseFromDisk(FilenameUtils.removeExtension(_responseFile.getName()));
-				//System.out.println("Response size: " + response.size());
-				
 				List<Integer> Q = retrieveChallengeFromFile(_inputFile.getName());
 				
 				// Retrieve sigma from file
@@ -417,14 +413,11 @@ public class Split extends JFrame
 				List<BigInteger> listOfMus = new ArrayList<BigInteger>();
 				for (int i = 1; i < response.size(); i++)
 					listOfMus.add(response.get(i));
-				//System.out.println("listOfMus size: " + listOfMus.size());
 				
 				// Calculate summation of coefficients x key
 				BigInteger keyXCoefficient = BigInteger.valueOf(0);
 				for (int i : Q)
 				{
-					//keyXCoefficient += _key * i;
-					
 					BigInteger key = BigInteger.valueOf(_key);
 					key = key.multiply(BigInteger.valueOf(i));
 					keyXCoefficient.add(key);
@@ -434,8 +427,6 @@ public class Split extends JFrame
 				BigInteger alphasXMus = BigInteger.valueOf(0);
 				for (int i = 0; i < _alphas.size(); i++)
 				{
-					//alphasXMus += listOfMus.get(i) * _alphas.get(i);
-					
 					BigInteger alpha = BigInteger.valueOf(_alphas.get(i));
 					alpha = alpha.multiply(listOfMus.get(i));
 					alphasXMus = alphasXMus.add(alpha);
@@ -494,6 +485,11 @@ public class Split extends JFrame
 	// ///////// SPLITTER
 	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * Erasure encode the input file and obtain a list of erasure encoded slices
+	 * @param inFile The input file
+	 * @return Returns a list of erasure encoded byte arrays
+	 */
 	private List<byte[]> getErasureEncodedFileSlices(File inFile)
 	{
 		// int rowSize = 15; 
@@ -521,7 +517,6 @@ public class Split extends JFrame
 		}
 
 		String matrix = sb.toString();
-		// System.out.println("Matrix: " + matrix);
 
 		// Declare an instance of the IDA algorithm
 		IInfoDispersal iid = new RabinImpl2();
@@ -542,17 +537,13 @@ public class Split extends JFrame
 			// Split the input file into slices
 			lsSegmented = iid.split(fileInputStream, info);
 
-			// Display number of slices generated
-			// System.out.println("Output Segments : " + lsSegmented.size());
-
+			// Loop through List of InputStreams and add sequence number to each element, starting from 0
 			lsSegmentedWithId = new ArrayList<InputStream>();
-			byte index = 0; // byte can contain value from -128 to 127
-
-			// Loop through List of InputStreams and add sequence number to each
-			// element, starting from 0
+			byte index = 0;			
 			for (InputStream inputStream : lsSegmented)
 				lsSegmentedWithId.add(new SequenceInputStream(new ByteArrayInputStream(new byte[] { index++ }), inputStream));
 
+			// Convert the InputStreams to byte arrays to prevent the data from disappearing upon first use
 			for (InputStream is : lsSegmentedWithId)
 			{
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -562,8 +553,8 @@ public class Split extends JFrame
 					int oneByte;
 					while ((oneByte = is.read()) != -1)
 						buffer.write(oneByte);
-
-				} catch (Exception ex)
+				}
+				catch (Exception ex)
 				{
 					ex.printStackTrace();
 				}
@@ -579,8 +570,6 @@ public class Split extends JFrame
 		}
 
 		return listOfByteArrays;
-		// return lsSegmentedWithId;
-		// return lsSegmented;
 	}
 	
 	/**
@@ -729,12 +718,6 @@ public class Split extends JFrame
 	private List<BigInteger> calculateAuthenticationValues(List<byte[]> listOfEncodedSliceBytes)
 	{
 		List<BigInteger> listOfAuthenticators = new ArrayList<BigInteger>();
-		_noOfSectors = splitSliceIntoSectors(listOfEncodedSliceBytes.get(0)).size();
-		
-		// Clear the list of alphas before adding
-		_alphas.clear();
-		for (int i = 0; i < _noOfSectors; i++)
-			_alphas.add(generateSecureRandomInteger(_p));
 		
 		for (int i = 0; i < listOfEncodedSliceBytes.size(); i++)
 		{
@@ -824,9 +807,9 @@ public class Split extends JFrame
 	// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Retrieves the file slices corresponding to the authenticator selected
-	 * @param filename The name of the file to be retrieved
-	 * @return Returns a list of the file slices corresponding to the authenticator selected
+	 * Retrieves the file slices corresponding to the authentication file selected
+	 * @param filename The name of the authentication file
+	 * @return Returns a list of the file slices corresponding to the authentication file selected
 	 */
 	private List<File> retrieveFileSlices(String filename)
 	{
@@ -847,7 +830,7 @@ public class Split extends JFrame
 	}
 
 	/**
-	 * Retrieves the authentication values from a file on disk
+	 * Retrieves the authenticators from a file on disk
 	 * @param filename The name of the file to be retrieved
 	 * @return Returns a list of authenticators
 	 */
@@ -902,7 +885,7 @@ public class Split extends JFrame
 	
 	/**
 	 * Saves the prover's response to disk
-	 * @param response The generated prover's response (sigma & mu)
+	 * @param response The generated prover's response (sigma & mus)
 	 */
 	private void saveResponseToDisk(List<BigInteger> response)
 	{
@@ -930,7 +913,7 @@ public class Split extends JFrame
 	/**
 	 * Retrieves the prover's response from disk
 	 * @param filename The name of the response file
-	 * @return A list containing the prover's response (sigma & mu)
+	 * @return A BigInteger list containing the prover's response (sigma & mus)
 	 */
 	private List<BigInteger> retrieveResponseFromDisk(String filename)
 	{
