@@ -59,6 +59,7 @@ public class Split extends JFrame
 	private int _p; // large prime
 	private List<Integer> _alphas = new ArrayList<Integer>(); // list of random integers within large prime p
 	private int _key; // random integer generated using a PRF
+	private long _inputFileSize;
 	private int _noOfSectors;
 	private int _sectorSize = 1024; // 1KB
 
@@ -140,6 +141,8 @@ public class Split extends JFrame
 					_inputFile = fc.getSelectedFile();
 					tb_filename.setText(_inputFile.getName());
 					_currentPath = fc.getCurrentDirectory().toString() + "\\";
+					_inputFileSize = _inputFile.length();
+					System.out.println("Input file size: " + _inputFileSize);
 				}
 			}
 		});
@@ -380,6 +383,7 @@ public class Split extends JFrame
 					// Calculating mus
 					for (int i = 0; i < _noOfSectors; i++)
 					{
+						
 						BigInteger mu = BigInteger.valueOf(0);
 						for (int j = 0; j < Q.size(); j++)
 						{
