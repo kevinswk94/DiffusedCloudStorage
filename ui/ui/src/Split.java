@@ -45,6 +45,9 @@ import org.apache.commons.io.FilenameUtils;
 import java.awt.Color;
 import java.awt.Font;
 import javax.swing.SwingConstants;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 
 public class Split extends JFrame
 {
@@ -62,17 +65,17 @@ public class Split extends JFrame
 	private JPanel panel_contentPane;
 	private JTextField tb_filename;
 	private JTextField tb_primeP;
-	private JTextField tb_alpha;
 	private JTextField tb_prfKey;
 	private JTextField tb_chalFilename;
 	private JTextField tb_sigma;
-	private JTextField tb_mu;
 	private JTextField tb_respFilename;
 	private JTextField tb_fileSigma;
 	private JTextField tb_calcSigma;
 	private JTextField tb_status;
 	private JTextField tb_noOfSlices;
 	private JTextField tb_sectorsPerSlice;
+	private JTextArea ta_alphas;
+	private JTextArea ta_mu;
 
 	/**
 	 * Launch the application.
@@ -145,35 +148,29 @@ public class Split extends JFrame
 
 		JLabel lbl_primeP = new JLabel("Prime:");
 		lbl_primeP.setHorizontalAlignment(SwingConstants.RIGHT);
-		lbl_primeP.setBounds(32, 55, 89, 14);
+		lbl_primeP.setBounds(10, 55, 82, 14);
 		panel_splitterPane.add(lbl_primeP);
 
-		JLabel lbl_alpha = new JLabel("Alpha:");
+		JLabel lbl_alpha = new JLabel("Alphas:");
 		lbl_alpha.setHorizontalAlignment(SwingConstants.RIGHT);
-		lbl_alpha.setBounds(32, 83, 89, 14);
+		lbl_alpha.setBounds(22, 148, 70, 14);
 		panel_splitterPane.add(lbl_alpha);
 
 		JLabel lbl_prfKey = new JLabel("PRF Key:");
 		lbl_prfKey.setHorizontalAlignment(SwingConstants.RIGHT);
-		lbl_prfKey.setBounds(32, 111, 89, 14);
+		lbl_prfKey.setBounds(213, 55, 70, 14);
 		panel_splitterPane.add(lbl_prfKey);
 
 		tb_primeP = new JTextField();
 		tb_primeP.setEditable(false);
-		tb_primeP.setBounds(139, 55, 131, 20);
+		tb_primeP.setBounds(102, 55, 83, 20);
 		panel_splitterPane.add(tb_primeP);
 		tb_primeP.setColumns(10);
-
-		tb_alpha = new JTextField();
-		tb_alpha.setEditable(false);
-		tb_alpha.setColumns(10);
-		tb_alpha.setBounds(139, 83, 131, 20);
-		panel_splitterPane.add(tb_alpha);
 
 		tb_prfKey = new JTextField();
 		tb_prfKey.setEditable(false);
 		tb_prfKey.setColumns(10);
-		tb_prfKey.setBounds(139, 111, 131, 20);
+		tb_prfKey.setBounds(293, 52, 72, 20);
 		panel_splitterPane.add(tb_prfKey);
 
 		JButton btn_split = new JButton("Split");
@@ -203,6 +200,17 @@ public class Split extends JFrame
 				for (int i = 0; i < _noOfSectors; i++)
 					_alphas.add(generateSecureRandomInteger(_p));
 				
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < _alphas.size(); i++)
+				{
+					if (_alphas.get(i) != _alphas.get(_alphas.size() - 1))
+						sb.append(_alphas.get(i) + ", ");
+					else if (_alphas.get(i) == _alphas.get(_alphas.size() - 1))
+						sb.append(_alphas.get(i));
+				}
+				
+				ta_alphas.setText(sb.toString());
+				
 				List<BigInteger> listOfAuthenticators = calculateAuthenticationValues(listOfEncodedSliceBytes);
 
 				// Save file slices to disk
@@ -212,7 +220,7 @@ public class Split extends JFrame
 				saveAuthenticatorsToDisk(listOfAuthenticators);
 			}
 		});
-		btn_split.setBounds(313, 96, 89, 44);
+		btn_split.setBounds(96, 203, 89, 29);
 		panel_splitterPane.add(btn_split);
 
 		JButton btnGenerateChallenge = new JButton("Generate Challenge");
@@ -233,30 +241,42 @@ public class Split extends JFrame
 				saveChallengeToDisk(Q);
 			}
 		});
-		btnGenerateChallenge.setBounds(159, 203, 153, 29);
+		btnGenerateChallenge.setBounds(217, 203, 153, 29);
 		panel_splitterPane.add(btnGenerateChallenge);
 		
 		JLabel lbl_noOfSlices = new JLabel("File Slices:");
 		lbl_noOfSlices.setHorizontalAlignment(SwingConstants.RIGHT);
-		lbl_noOfSlices.setBounds(23, 139, 98, 14);
+		lbl_noOfSlices.setBounds(10, 90, 82, 14);
 		panel_splitterPane.add(lbl_noOfSlices);
 		
 		tb_noOfSlices = new JTextField();
 		tb_noOfSlices.setEditable(false);
 		tb_noOfSlices.setColumns(10);
-		tb_noOfSlices.setBounds(139, 139, 54, 20);
+		tb_noOfSlices.setBounds(102, 87, 62, 20);
 		panel_splitterPane.add(tb_noOfSlices);
 		
 		JLabel lbl_sectorsPerSlice = new JLabel("Sectors per slice:");
 		lbl_sectorsPerSlice.setHorizontalAlignment(SwingConstants.RIGHT);
-		lbl_sectorsPerSlice.setBounds(10, 167, 111, 14);
+		lbl_sectorsPerSlice.setBounds(174, 90, 111, 14);
 		panel_splitterPane.add(lbl_sectorsPerSlice);
 		
 		tb_sectorsPerSlice = new JTextField();
 		tb_sectorsPerSlice.setEditable(false);
 		tb_sectorsPerSlice.setColumns(10);
-		tb_sectorsPerSlice.setBounds(139, 167, 54, 20);
+		tb_sectorsPerSlice.setBounds(293, 86, 54, 20);
 		panel_splitterPane.add(tb_sectorsPerSlice);
+		
+		ta_alphas = new JTextArea();
+		ta_alphas.setEditable(false);
+		ta_alphas.setLineWrap(true);
+		//ta_alphas.setBounds(103, 118, 82, 74);
+		//panel_splitterPane.add(ta_alphas);
+		
+		JScrollPane sp_alphas = new JScrollPane();
+		sp_alphas.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		sp_alphas.setBounds(102, 118, 245, 74);
+		panel_splitterPane.add(sp_alphas);
+		sp_alphas.setViewportView(ta_alphas);
 
 		JPanel panel_proverPane = new JPanel();
 		tabbedPane.addTab("Prover", null, panel_proverPane, null);
@@ -290,25 +310,21 @@ public class Split extends JFrame
 		btn_chooseChalFile.setBounds(340, 10, 89, 23);
 		panel_proverPane.add(btn_chooseChalFile);
 
-		JLabel lblNewLabel = new JLabel("Sigma:");
-		lblNewLabel.setBounds(32, 87, 89, 14);
-		panel_proverPane.add(lblNewLabel);
+		JLabel lbl_sigma = new JLabel("Sigma:");
+		lbl_sigma.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_sigma.setBounds(29, 60, 61, 14);
+		panel_proverPane.add(lbl_sigma);
 
-		JLabel lblMu = new JLabel("Mu:");
-		lblMu.setBounds(32, 112, 89, 14);
-		panel_proverPane.add(lblMu);
+		JLabel lbl_mu = new JLabel("Mu:");
+		lbl_mu.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_mu.setBounds(29, 125, 61, 14);
+		panel_proverPane.add(lbl_mu);
 
 		tb_sigma = new JTextField();
 		tb_sigma.setEditable(false);
-		tb_sigma.setBounds(131, 84, 131, 20);
+		tb_sigma.setBounds(111, 60, 131, 20);
 		panel_proverPane.add(tb_sigma);
 		tb_sigma.setColumns(10);
-
-		tb_mu = new JTextField();
-		tb_mu.setEditable(false);
-		tb_mu.setColumns(10);
-		tb_mu.setBounds(131, 109, 131, 20);
-		panel_proverPane.add(tb_mu);
 
 		JButton btn_prove = new JButton("Prove!");
 		btn_prove.addActionListener(new ActionListener()
@@ -380,9 +396,18 @@ public class Split extends JFrame
 						response.add(mu);
 					}
 					
+					StringBuilder sb = new StringBuilder();
+					for (int i = 1; i < response.size(); i++)
+					{
+						if (response.get(i) != response.get(response.size() - 1))
+							sb.append(response.get(i) + ", ");
+						else if (response.get(i) == response.get(response.size() - 1))
+							sb.append(response.get(i));
+					}
+					
 					// Display sigma and mu on the program
 					tb_sigma.setText(String.valueOf(sigma));
-					//tb_mu.setText(String.valueOf(mu));
+					ta_mu.setText(sb.toString());
 
 				} catch (Exception ex)
 				{
@@ -393,8 +418,20 @@ public class Split extends JFrame
 				saveResponseToDisk(response);
 			}
 		});
-		btn_prove.setBounds(302, 87, 89, 39);
+		btn_prove.setBounds(312, 100, 89, 39);
 		panel_proverPane.add(btn_prove);
+		
+		ta_mu = new JTextArea();
+		ta_mu.setLineWrap(true);
+		ta_mu.setEditable(false);
+		//ta_mu.setBounds(111, 94, 168, 67);
+		//panel_proverPane.add(ta_mu);
+		
+		JScrollPane sp_mu = new JScrollPane();
+		sp_mu.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		sp_mu.setBounds(111, 106, 162, 66);
+		panel_proverPane.add(sp_mu);
+		sp_mu.setViewportView(ta_mu);
 
 		JPanel panel_verifierPane = new JPanel();
 		tabbedPane.addTab("Verifier", null, panel_verifierPane, null);
@@ -486,11 +523,13 @@ public class Split extends JFrame
 		tb_fileSigma.setColumns(10);
 		
 		JLabel lbl_fileSigma = new JLabel("Sigma:");
-		lbl_fileSigma.setBounds(32, 72, 82, 14);
+		lbl_fileSigma.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_fileSigma.setBounds(47, 72, 82, 14);
 		panel_verifierPane.add(lbl_fileSigma);
 		
 		JLabel lbl_calcSigma = new JLabel("Calculated Sigma:");
-		lbl_calcSigma.setBounds(32, 108, 124, 14);
+		lbl_calcSigma.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_calcSigma.setBounds(10, 108, 119, 14);
 		panel_verifierPane.add(lbl_calcSigma);
 		
 		tb_calcSigma = new JTextField();
@@ -500,7 +539,8 @@ public class Split extends JFrame
 		panel_verifierPane.add(tb_calcSigma);
 		
 		JLabel lbl_status = new JLabel("Status:");
-		lbl_status.setBounds(32, 142, 82, 14);
+		lbl_status.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_status.setBounds(47, 142, 82, 14);
 		panel_verifierPane.add(lbl_status);
 		
 		tb_status = new JTextField();
