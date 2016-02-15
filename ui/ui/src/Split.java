@@ -44,6 +44,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.awt.Color;
 import java.awt.Font;
+import javax.swing.SwingConstants;
 
 public class Split extends JFrame
 {
@@ -70,6 +71,8 @@ public class Split extends JFrame
 	private JTextField tb_fileSigma;
 	private JTextField tb_calcSigma;
 	private JTextField tb_status;
+	private JTextField tb_noOfSlices;
+	private JTextField tb_sectorsPerSlice;
 
 	/**
 	 * Launch the application.
@@ -141,33 +144,36 @@ public class Split extends JFrame
 		panel_splitterPane.add(btn_chooseFile);
 
 		JLabel lbl_primeP = new JLabel("Prime:");
-		lbl_primeP.setBounds(32, 80, 89, 14);
+		lbl_primeP.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_primeP.setBounds(32, 55, 89, 14);
 		panel_splitterPane.add(lbl_primeP);
 
 		JLabel lbl_alpha = new JLabel("Alpha:");
-		lbl_alpha.setBounds(32, 105, 89, 14);
+		lbl_alpha.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_alpha.setBounds(32, 83, 89, 14);
 		panel_splitterPane.add(lbl_alpha);
 
 		JLabel lbl_prfKey = new JLabel("PRF Key:");
-		lbl_prfKey.setBounds(32, 130, 89, 14);
+		lbl_prfKey.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_prfKey.setBounds(32, 111, 89, 14);
 		panel_splitterPane.add(lbl_prfKey);
 
 		tb_primeP = new JTextField();
 		tb_primeP.setEditable(false);
-		tb_primeP.setBounds(127, 77, 131, 20);
+		tb_primeP.setBounds(139, 55, 131, 20);
 		panel_splitterPane.add(tb_primeP);
 		tb_primeP.setColumns(10);
 
 		tb_alpha = new JTextField();
 		tb_alpha.setEditable(false);
 		tb_alpha.setColumns(10);
-		tb_alpha.setBounds(127, 102, 131, 20);
+		tb_alpha.setBounds(139, 83, 131, 20);
 		panel_splitterPane.add(tb_alpha);
 
 		tb_prfKey = new JTextField();
 		tb_prfKey.setEditable(false);
 		tb_prfKey.setColumns(10);
-		tb_prfKey.setBounds(127, 127, 131, 20);
+		tb_prfKey.setBounds(139, 111, 131, 20);
 		panel_splitterPane.add(tb_prfKey);
 
 		JButton btn_split = new JButton("Split");
@@ -179,15 +185,18 @@ public class Split extends JFrame
 				_p = generateLargePrime();
 				_key = generatePRFKeyK();
 
-				// Displays them on the GUI
+				// Displays P and Key on the GUI
 				tb_primeP.setText(String.valueOf(_p));
 				tb_prfKey.setText(String.valueOf(_key));
-				// tb_alpha.setText(String.valueOf(_alpha));
 
 				// Get erasure encoded byte arrays from input file
 				List<byte[]> listOfEncodedSliceBytes = getErasureEncodedFileSlices(_inputFile);
 				
 				_noOfSectors = splitSliceIntoSectors(listOfEncodedSliceBytes.get(0)).size();
+				
+				// Displays no. of slices & sectors per slice on GUI
+				tb_noOfSlices.setText(String.valueOf(listOfEncodedSliceBytes.size()));
+				tb_sectorsPerSlice.setText(String.valueOf(_noOfSectors));
 				
 				// Clear the list of alphas before adding
 				_alphas.clear();
@@ -203,7 +212,7 @@ public class Split extends JFrame
 				saveAuthenticatorsToDisk(listOfAuthenticators);
 			}
 		});
-		btn_split.setBounds(302, 90, 89, 44);
+		btn_split.setBounds(313, 96, 89, 44);
 		panel_splitterPane.add(btn_split);
 
 		JButton btnGenerateChallenge = new JButton("Generate Challenge");
@@ -224,8 +233,30 @@ public class Split extends JFrame
 				saveChallengeToDisk(Q);
 			}
 		});
-		btnGenerateChallenge.setBounds(138, 179, 153, 29);
+		btnGenerateChallenge.setBounds(159, 203, 153, 29);
 		panel_splitterPane.add(btnGenerateChallenge);
+		
+		JLabel lbl_noOfSlices = new JLabel("File Slices:");
+		lbl_noOfSlices.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_noOfSlices.setBounds(23, 139, 98, 14);
+		panel_splitterPane.add(lbl_noOfSlices);
+		
+		tb_noOfSlices = new JTextField();
+		tb_noOfSlices.setEditable(false);
+		tb_noOfSlices.setColumns(10);
+		tb_noOfSlices.setBounds(139, 139, 54, 20);
+		panel_splitterPane.add(tb_noOfSlices);
+		
+		JLabel lbl_sectorsPerSlice = new JLabel("Sectors per slice:");
+		lbl_sectorsPerSlice.setHorizontalAlignment(SwingConstants.RIGHT);
+		lbl_sectorsPerSlice.setBounds(10, 167, 111, 14);
+		panel_splitterPane.add(lbl_sectorsPerSlice);
+		
+		tb_sectorsPerSlice = new JTextField();
+		tb_sectorsPerSlice.setEditable(false);
+		tb_sectorsPerSlice.setColumns(10);
+		tb_sectorsPerSlice.setBounds(139, 167, 54, 20);
+		panel_splitterPane.add(tb_sectorsPerSlice);
 
 		JPanel panel_proverPane = new JPanel();
 		tabbedPane.addTab("Prover", null, panel_proverPane, null);
