@@ -57,8 +57,9 @@ public class Split extends JFrame
 	private String _currentPath; // The path of the directory the user is currently in
 
 	private int _p; // large prime
-	private List<Integer> _alphas = new ArrayList<Integer>(); // list of random integers within large prime p
+	// list of random integers within large prime p
 	private int _key; // random integer generated using a PRF
+	
 	private long _inputFileSize;
 	private int _noOfSectors;
 	private int _sectorSize = 1024; // 1KB
@@ -141,8 +142,16 @@ public class Split extends JFrame
 					_inputFile = fc.getSelectedFile();
 					tb_filename.setText(_inputFile.getName());
 					_currentPath = fc.getCurrentDirectory().toString() + "\\";
+					
+					// Record the size of the input file
 					_inputFileSize = _inputFile.length();
 					System.out.println("Input file size: " + _inputFileSize);
+					
+					// Generates large prime _p
+					_p = generateLargePrime();
+					
+					// Displays P and Key on the GUI
+					tb_primeP.setText(String.valueOf(_p));
 				}
 			}
 		});
@@ -181,14 +190,12 @@ public class Split extends JFrame
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				// Generates large prime _p, random int _alpha and PRF key _k
-				_p = generateLargePrime();
+				// Generate PRF key
 				_key = generatePRFKeyK();
-
-				// Displays P and Key on the GUI
-				tb_primeP.setText(String.valueOf(_p));
+				
+				// Display PRF key on GUI
 				tb_prfKey.setText(String.valueOf(_key));
-
+				
 				// Get erasure encoded byte arrays from input file
 				List<byte[]> listOfEncodedSliceBytes = getErasureEncodedFileSlices(_inputFile);
 				
@@ -199,7 +206,8 @@ public class Split extends JFrame
 				tb_sectorsPerSlice.setText(String.valueOf(_noOfSectors));
 				
 				// Clear the list of alphas before adding
-				_alphas.clear();
+				List<Integer> _alphas = new ArrayList<Integer>();
+				//_alphas.clear();
 				for (int i = 0; i < _noOfSectors; i++)
 					_alphas.add(generateSecureRandomInteger(_p));
 				
@@ -214,13 +222,22 @@ public class Split extends JFrame
 				
 				ta_alphas.setText(sb.toString());
 				
-				List<BigInteger> listOfAuthenticators = calculateAuthenticationValues(listOfEncodedSliceBytes);
+				List<BigInteger> listOfAuthenticators = calculateAuthenticationValues(listOfEncodedSliceBytes, _alphas);
 
+				// Create t and add PRF key and alphas to it
+				List<Integer> t = new ArrayList<Integer>();
+				t.add(_key);
+				for (int i : _alphas)
+					t.add(i);
+					
 				// Save file slices to disk
 				saveFileSlicesToDisk(listOfEncodedSliceBytes);
 
 				// Save authenticators to disk
 				saveAuthenticatorsToDisk(listOfAuthenticators);
+				
+				// Save t to disk
+				saveTToDisk(t);
 			}
 		});
 		btn_split.setBounds(96, 203, 89, 29);
@@ -237,7 +254,7 @@ public class Split extends JFrame
 
 				// Create challenge set of random coefficients
 				List<Integer> Q = new ArrayList<Integer>();
-				for (int i = 1; i <= listOfAuthenticators.size(); i++)
+				for (int i = 0; i < listOfAuthenticators.size(); i++)
 					Q.add(generateSecureRandomInteger(255));
 
 				// Save index coefficient pairs to disk
@@ -335,7 +352,9 @@ public class Split extends JFrame
 			public void actionPerformed(ActionEvent e)
 			{
 				// Get list of authenticators (1 of 3)
-				List<BigInteger> authenticators = retrieveAuthenticatorsFromDisk(_inputFile.getName());
+				List<BigInteger> authenticators = retrieveAuthenticatorsFromDisk(FilenameUtils.removeExtension(_challengeFile.getName()));
+				
+				List<Integer> t = retrieveTFromFile(FilenameUtils.removeExtension(_challengeFile.getName()));
 				
 				// Retrieve all the file slices corresponding to the authentication file
 				List<File> listOfSlices = retrieveFileSlices(FilenameUtils.removeExtension(_challengeFile.getName()));
@@ -381,7 +400,7 @@ public class Split extends JFrame
 					response.add(sigma);
 					
 					// Calculating mus
-					for (int i = 0; i < _noOfSectors; i++)
+					for (int i = 0; i < t.size() - 1; i++)
 					{
 						
 						BigInteger mu = BigInteger.valueOf(0);
@@ -476,7 +495,12 @@ public class Split extends JFrame
 			{
 				// Retrieve the response and Q from disk
 				List<BigInteger> response = retrieveResponseFromDisk(FilenameUtils.removeExtension(_responseFile.getName()));
-				List<Integer> Q = retrieveChallengeFromFile(_inputFile.getName());
+				List<Integer> Q = retrieveChallengeFromFile(FilenameUtils.removeExtension(_responseFile.getName()));
+				List<Integer> T = retrieveTFromFile(FilenameUtils.removeExtension(_responseFile.getName()));
+				List<Integer> _alphas = new ArrayList<Integer>();
+				
+				for (int i = 1; i < T.size(); i++)
+					_alphas.add(T.get(i));
 				
 				// Retrieve sigma from file
 				BigInteger sigma = response.get(0);
@@ -488,9 +512,9 @@ public class Split extends JFrame
 				
 				// Calculate summation of coefficients x key
 				BigInteger keyXCoefficient = BigInteger.valueOf(0);
+				BigInteger key = BigInteger.valueOf(T.get(0));
 				for (int i : Q)
 				{
-					BigInteger key = BigInteger.valueOf(_key);
 					key = key.multiply(BigInteger.valueOf(i));
 					keyXCoefficient.add(key);
 				}
@@ -790,7 +814,7 @@ public class Split extends JFrame
 	 * @param ba A byte array slice of a file
 	 * @return Returns the generated authentication value
 	 */
-	private List<BigInteger> calculateAuthenticationValues(List<byte[]> listOfEncodedSliceBytes)
+	private List<BigInteger> calculateAuthenticationValues(List<byte[]> listOfEncodedSliceBytes, List<Integer> _alphas)
 	{
 		List<BigInteger> listOfAuthenticators = new ArrayList<BigInteger>();
 		
@@ -869,6 +893,29 @@ public class Split extends JFrame
 					writer.print(Q.get(i) + ",");
 				else if (Q.get(i) == Q.get(Q.size() - 1))
 					writer.print(Q.get(i));
+			}
+			writer.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Save the PRF key and alphas to disk
+	 * @param T The list of integers that contain the PRF key and alphas
+	 */
+	private void saveTToDisk(List<Integer> T)
+	{
+		try
+		{
+			PrintWriter writer = new PrintWriter(_currentPath + tb_filename.getText() + ".t", "UTF-8");
+			for (int i = 0; i < T.size(); i++)
+			{
+				if (T.get(i) != T.get(T.size() - 1))
+					writer.print(T.get(i) + ",");
+				else if (T.get(i) == T.get(T.size() - 1))
+					writer.print(T.get(i));
 			}
 			writer.close();
 		} catch (Exception ex)
@@ -956,6 +1003,33 @@ public class Split extends JFrame
 			ex.printStackTrace();
 		}
 		return listOfCoeffients;
+	}
+	
+	/**
+	 * Retrieves the list containing the PRF key and alphas from disk
+	 * @param filename The name of the T file
+	 * @return Returns a list containing the PRF key and alphas
+	 */
+	private List<Integer> retrieveTFromFile(String filename)
+	{
+		List<Integer> listOfT = new ArrayList<Integer>();
+		try
+		{
+			BufferedReader br = new BufferedReader(new FileReader(_currentPath + filename + ".t"));
+			String line = null;
+
+			while ((line = br.readLine()) != null)
+			{
+				String[] values = line.split(",");
+				for (String str : values)
+					listOfT.add(Integer.parseInt(str, 10));
+			}
+			br.close();
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		return listOfT;
 	}
 	
 	/**
